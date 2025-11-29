@@ -315,6 +315,7 @@
                 <!-- Акции -->
                 <tr th:each="posValue : ${portfolioValue.positions}" 
                     th:if="${posValue.securityType == 'STOCK'}"
+                    th:with="priceDecimals=${posValue.decimals != null ? posValue.decimals : 2}"
                     th:attr="data-isin=${posValue.position.isin}">
                     <td>
                         <span th:text="${posValue.shortName}">-</span>
@@ -324,8 +325,8 @@
                         <span class="badge badge-stock">Акция</span>
                     </td>
                     <td class="text-right" th:text="${#numbers.formatInteger(posValue.position.quantity.setScale(0, T(java.math.RoundingMode).HALF_UP).intValue(), 0)}">-</td>
-                    <td class="text-right" th:text="${posValue.currentPrice != null ? #numbers.formatDecimal(posValue.currentPrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
-                    <td class="text-right" th:text="${posValue.position.averagePurchasePrice != null ? #numbers.formatDecimal(posValue.position.averagePurchasePrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.currentPrice != null ? #numbers.formatDecimal(posValue.currentPrice, 1, priceDecimals) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.position.averagePurchasePrice != null ? #numbers.formatDecimal(posValue.position.averagePurchasePrice, 1, priceDecimals) : '-'}">-</td>
                     <td class="text-right" th:text="${posValue.currentValue != null ? #numbers.formatDecimal(posValue.currentValue, 1, 2) : '-'}">-</td>
                     <td class="text-right">
                         <span th:if="${posValue.dailyChange != null}" 
@@ -357,6 +358,7 @@
                 <!-- Облигации -->
                 <tr th:each="posValue : ${portfolioValue.positions}" 
                     th:if="${posValue.securityType == 'BOND'}"
+                    th:with="priceDecimals=${posValue.decimals != null ? posValue.decimals : 2}"
                     th:attr="data-isin=${posValue.position.isin}">
                     <td>
                         <span th:text="${posValue.shortName}">-</span>
@@ -366,8 +368,8 @@
                         <span class="badge badge-bond">Облигация</span>
                     </td>
                     <td class="text-right" th:text="${#numbers.formatInteger(posValue.position.quantity.setScale(0, T(java.math.RoundingMode).HALF_UP).intValue(), 0)}">-</td>
-                    <td class="text-right" th:text="${posValue.currentPrice != null ? #numbers.formatDecimal(posValue.currentPrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
-                    <td class="text-right" th:text="${posValue.position.averagePurchasePrice != null ? #numbers.formatDecimal(posValue.position.averagePurchasePrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.currentPrice != null ? #numbers.formatDecimal(posValue.currentPrice, 1, priceDecimals) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.position.averagePurchasePrice != null ? #numbers.formatDecimal(posValue.position.averagePurchasePrice, 1, priceDecimals) : '-'}">-</td>
                     <td class="text-right" th:text="${posValue.currentValue != null ? #numbers.formatDecimal(posValue.currentValue, 1, 2) : '-'}">-</td>
                     <td class="text-right">
                         <span th:if="${posValue.dailyChange != null}" 

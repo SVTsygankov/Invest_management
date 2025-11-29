@@ -257,7 +257,7 @@ public class BrokerReportParser {
      * Определяет тип ценной бумаги по ISIN, проверяя справочники MOEX и загружая из API при необходимости
      * @param isin ISIN ценной бумаги
      * @param securityName название ценной бумаги (для сообщения об ошибке)
-     * @param reportParsedReport отчет, из которого можно взять информацию о типе (может быть null)
+     * @param report отчет, из которого можно взять информацию о типе (может быть null)
      * @return "BOND" для облигаций, "STOCK" для акций
      * @throws IllegalArgumentException если инструмент не найден ни в справочниках, ни в MOEX API, ни в отчете
      */

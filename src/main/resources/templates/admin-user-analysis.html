@@ -569,7 +569,9 @@
                                  marketPrice=${stock != null ? stock.marketprice : null},
                                  expertTarget=${stockAnalysis.expertTarget},
                                  expertForecastPercent=${forecastPercentMap.get(stockAnalysis.id)},
-                                 recommendationClass=${stockAnalysis.expertRecommendation == 'Покупать' ? 'recommendation-buy' : (stockAnalysis.expertRecommendation == 'Держать' ? 'recommendation-hold' : (stockAnalysis.expertRecommendation == 'Продавать' ? 'recommendation-sell' : ''))}"
+                                 recommendationClass=${stockAnalysis.expertRecommendation == 'Покупать' ? 'recommendation-buy' : (stockAnalysis.expertRecommendation == 'Держать' ? 'recommendation-hold' : (stockAnalysis.expertRecommendation == 'Продавать' ? 'recommendation-sell' : ''))},
+                                 stockDecimals=${stock != null ? stock.decimals : null},
+                                 priceDecimals=${stockDecimals != null ? stockDecimals : 2}"
                         th:attr="data-secid=${stock != null ? stock.secid : ''},
                                  data-shortname=${stock != null ? stock.shortname : ''},
                                  data-marketprice=${marketPrice != null ? marketPrice : '0'},
@@ -584,9 +586,9 @@
                         <td th:text="${iterStat.count}">1</td>
                         <td th:text="${stock != null ? stock.secid : '—'}">TICK</td>
                         <td th:text="${stock != null ? stock.shortname : '—'}">Название</td>
-                        <td th:text="${marketPrice != null ? #numbers.formatDecimal(marketPrice, 1, stock != null && stock.decimals != null ? stock.decimals : 2) : '—'}"
+                        <td th:text="${marketPrice != null ? #numbers.formatDecimal(marketPrice, 1, priceDecimals) : '—'}"
                             class="text-right">—</td>
-                        <td th:text="${expertTarget != null ? #numbers.formatDecimal(expertTarget, 1, stock != null && stock.decimals != null ? stock.decimals : 2) : '—'}"
+                        <td th:text="${expertTarget != null ? #numbers.formatDecimal(expertTarget, 1, priceDecimals) : '—'}"
                             class="text-right">—</td>
                         <td th:text="${stockAnalysis.expertRecommendation != null ? stockAnalysis.expertRecommendation : '—'}"
                             th:classappend="${recommendationClass}">—</td>

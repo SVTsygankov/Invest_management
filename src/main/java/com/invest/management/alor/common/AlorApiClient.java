@@ -226,7 +226,7 @@ public class AlorApiClient {
             log.error("Ошибка при получении позиций ALOR: статус {}, тело: {}", response.getStatusCode(), errorBody);
             return String.format("Ошибка: %s\nТело ответа: %s", response.getStatusCode(), errorBody);
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            String errorBody = e.getResponseBodyAsString() != null ? e.getResponseBodyAsString() : "Нет тела ответа";
+            String errorBody = e.getResponseBodyAsString();
             log.error("HTTP ошибка при получении позиций ALOR: статус {}, тело: {}", e.getStatusCode(), errorBody, e);
             return String.format("HTTP ошибка: %s\nТело ответа: %s", e.getStatusCode(), errorBody);
         } catch (Exception e) {
@@ -266,7 +266,7 @@ public class AlorApiClient {
             log.error("Ошибка при получении сделок ALOR: статус {}, тело: {}", response.getStatusCode(), errorBody);
             return String.format("Ошибка: %s\nТело ответа: %s", response.getStatusCode(), errorBody);
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            String errorBody = e.getResponseBodyAsString() != null ? e.getResponseBodyAsString() : "Нет тела ответа";
+            String errorBody = e.getResponseBodyAsString();
             log.error("HTTP ошибка при получении сделок ALOR: статус {}, тело: {}", e.getStatusCode(), errorBody, e);
             return String.format("HTTP ошибка: %s\nТело ответа: %s", e.getStatusCode(), errorBody);
         } catch (Exception e) {
@@ -306,7 +306,7 @@ public class AlorApiClient {
             log.error("Ошибка при получении движений денежных средств ALOR: статус {}, тело: {}", response.getStatusCode(), errorBody);
             return String.format("Ошибка: %s\nТело ответа: %s", response.getStatusCode(), errorBody);
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            String errorBody = e.getResponseBodyAsString() != null ? e.getResponseBodyAsString() : "Нет тела ответа";
+            String errorBody = e.getResponseBodyAsString();
             log.error("HTTP ошибка при получении движений денежных средств ALOR: статус {}, тело: {}", e.getStatusCode(), errorBody, e);
             return String.format("HTTP ошибка: %s\nТело ответа: %s", e.getStatusCode(), errorBody);
         } catch (Exception e) {
@@ -360,7 +360,7 @@ public class AlorApiClient {
                     symbol, exchange, response.getStatusCode());
             return Optional.empty();
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            String errorBody = e.getResponseBodyAsString() != null ? e.getResponseBodyAsString() : "Нет тела ответа";
+            String errorBody = e.getResponseBodyAsString();
             log.warn("HTTP ошибка при получении котировки для {} ({}): статус {}, тело: {}", 
                     symbol, exchange, e.getStatusCode(), errorBody);
             return Optional.empty();
@@ -412,7 +412,7 @@ public class AlorApiClient {
                     symbol, exchange, response.getStatusCode());
             return Optional.empty();
         } catch (org.springframework.web.client.HttpClientErrorException e) {
-            String errorBody = e.getResponseBodyAsString() != null ? e.getResponseBodyAsString() : "Нет тела ответа";
+            String errorBody = e.getResponseBodyAsString();
             log.warn("HTTP ошибка при получении котировки для {} ({}): статус {}, тело: {}", 
                     symbol, exchange, e.getStatusCode(), errorBody);
             return Optional.empty();

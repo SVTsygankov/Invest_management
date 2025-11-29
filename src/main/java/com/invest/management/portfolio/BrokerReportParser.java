@@ -178,7 +178,7 @@ public class BrokerReportParser {
             boolean isReferenceTable = false;
             
             // Проверяем заголовки таблицы (первая строка обычно)
-            if (allRows.size() > 0) {
+            if (!allRows.isEmpty()) {
                 Elements headerCells = allRows.get(0).select("td, th");
                 log.debug("Таблица #{}: проверка {} заголовков", tableIndex + 1, headerCells.size());
                 
@@ -213,7 +213,7 @@ public class BrokerReportParser {
                         log.debug("Справочник строка #{}: ISIN={}, тип='{}'", i, isin, securityTypeStr);
                         
                         // ИЗМЕНЕНИЕ: убираем ограничение на "RU", обрабатываем любые валидные ISIN (длина 12)
-                        if (!isin.isEmpty() && isin.length() == 12) {
+                        if (isin.length() == 12) {
                             // Определяем тип из отчета
                             String securityType = "STOCK"; // по умолчанию
                             if (securityTypeStr.contains("Облигация") || securityTypeStr.contains("облигация")) {
@@ -377,7 +377,7 @@ public class BrokerReportParser {
                     log.info("Обработка строки #{}: {} ячеек", i, cells.size());
                     
                     // Проверяем первую ячейку на colspan или текст заголовка
-                    if (cells.size() > 0) {
+                    if (!cells.isEmpty()) {
                         Element firstCell = cells.get(0);
                         String firstCellText = firstCell.text().trim();
                         String colspan = firstCell.attr("colspan");
@@ -418,7 +418,7 @@ public class BrokerReportParser {
                         i, securityName, isin, currency, quantityStr, priceStr);
                     
                     // ИЗМЕНЕНИЕ: убираем ограничение на "RU", проверяем только валидность ISIN (длина 12)
-                    if (!isin.isEmpty() && isin.length() == 12 && !quantityStr.isEmpty()) {
+                    if (isin.length() == 12 && !quantityStr.isEmpty()) {
                         BigDecimal quantity = parseDecimal(quantityStr);
                         log.info("Распарсено количество для ISIN {}: {}", isin, quantity);
                         
@@ -567,7 +567,7 @@ public class BrokerReportParser {
                         }
                         
                         // ИЗМЕНЕНИЕ: проверяем валидность ISIN (длина 12), а не только RU
-                        if (isin == null || isin.isBlank() || isin.length() != 12) {
+                        if (isin.isBlank() || isin.length() != 12) {
                             String errorMsg = String.format("Не удалось определить ISIN для бумаги: название=%s, код=%s", 
                                 securityName, securityCode);
                             log.error(errorMsg);
@@ -677,22 +677,21 @@ public class BrokerReportParser {
                             continue;
                         }
                         
-                        String name = firstCellText;
                         String isin = cells.get(1).text().trim();
                         
-                        log.info("Проверка строки #{}: название='{}', ISIN='{}' (ищем: '{}')", i, name, isin, securityName);
+                        log.info("Проверка строки #{}: название='{}', ISIN='{}' (ищем: '{}')", i, firstCellText, isin, securityName);
                         
                         // Сравниваем по названию (точное совпадение или частичное)
-                        boolean nameMatches = name.equalsIgnoreCase(securityName) || 
-                                            name.contains(securityName) || 
-                                            securityName.contains(name) ||
+                        boolean nameMatches = firstCellText.equalsIgnoreCase(securityName) || 
+                                            firstCellText.contains(securityName) || 
+                                            securityName.contains(firstCellText) ||
                                             // Также пробуем сравнить без пробелов и в верхнем регистре
-                                            name.replaceAll("\\s+", "").equalsIgnoreCase(securityName.replaceAll("\\s+", ""));
+                                            firstCellText.replaceAll("\\s+", "").equalsIgnoreCase(securityName.replaceAll("\\s+", ""));
                         
-                        log.info("Сравнение названий: '{}' vs '{}' -> совпадение: {}", name, securityName, nameMatches);
+                        log.info("Сравнение названий: '{}' vs '{}' -> совпадение: {}", firstCellText, securityName, nameMatches);
                         
                         // ИЗМЕНЕНИЕ: убираем ограничение на "RU", ищем любые валидные ISIN (длина 12)
-                        if (nameMatches && !isin.isEmpty() && isin.length() == 12) {
+                        if (nameMatches && isin.length() == 12) {
                             log.info("Найден ISIN для бумаги '{}' / '{}': {}", securityName, securityCode, isin);
                             return isin;
                         } else if (nameMatches) {
@@ -710,7 +709,7 @@ public class BrokerReportParser {
             boolean isReferenceTable = false;
             
             // Проверяем заголовки таблицы (первая строка обычно)
-            if (allRows.size() > 0) {
+            if (!allRows.isEmpty()) {
                 Elements headerCells = allRows.get(0).select("td, th");
                 for (Element header : headerCells) {
                     String text = header.text();
@@ -751,7 +750,7 @@ public class BrokerReportParser {
                             code.equalsIgnoreCase(securityCode));
                         
                         // ИЗМЕНЕНИЕ: убираем ограничение на "RU", ищем любые валидные ISIN (длина 12)
-                        if (matches && !isin.isEmpty() && isin.length() == 12) {
+                        if (matches && isin.length() == 12) {
                             log.info("Найден ISIN в справочнике для бумаги '{}' / '{}': {}", securityName, securityCode, isin);
                             return isin;
                         }

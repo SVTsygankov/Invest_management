@@ -23,7 +23,7 @@ public class AlorConfig {
             request.getHeaders().set("Accept", MediaType.APPLICATION_JSON_VALUE);
             // Content-Type устанавливаем только если есть тело запроса
             // Для запросов с query параметрами и пустым телом Content-Type не нужен
-            if (body != null && body.length > 0) {
+            if (body.length > 0) {
                 request.getHeaders().set("Content-Type", MediaType.APPLICATION_JSON_VALUE);
             }
             return execution.execute(request, body);

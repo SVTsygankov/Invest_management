@@ -175,7 +175,7 @@ public class BondDataLoader {
         }
         
         JsonNode dataArray = securitiesNode.get("data");
-        if (dataArray == null || !dataArray.isArray() || dataArray.size() == 0) {
+        if (dataArray == null || !dataArray.isArray() || dataArray.isEmpty()) {
             log.warn("Не найдено данных для ISIN {} в MOEX API (массив пуст или отсутствует)", isin);
             return false;
         }
@@ -209,7 +209,7 @@ public class BondDataLoader {
                             JsonNode boardSecuritiesNode = boardRoot.get("securities");
                             if (boardSecuritiesNode != null) {
                                 JsonNode boardDataArray = boardSecuritiesNode.get("data");
-                                if (boardDataArray != null && boardDataArray.isArray() && boardDataArray.size() > 0) {
+                                if (boardDataArray != null && boardDataArray.isArray() && !boardDataArray.isEmpty()) {
                                     log.info("Найдено на площадке {}: {} записей", boardId, boardDataArray.size());
                                     // Нашли на площадке облигаций - парсим и сохраняем
                                     boolean saved = parseAndSaveBond(boardSecuritiesNode, boardRoot.get("marketdata"), boardId);
@@ -261,7 +261,7 @@ public class BondDataLoader {
         Map<String, Integer> marketIndex = marketDataNode != null ? parser.indexMap(parser.readColumns(marketDataNode)) : Map.of();
         
         JsonNode dataArray = securitiesNode.get("data");
-        if (dataArray == null || !dataArray.isArray() || dataArray.size() == 0) {
+        if (dataArray == null || !dataArray.isArray() || dataArray.isEmpty()) {
             return false;
         }
         

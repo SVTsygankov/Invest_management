@@ -8,10 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class StockAnalysisService {
@@ -69,7 +67,7 @@ public class StockAnalysisService {
     }
     
     private int compareRows(StockAnalysisRow a, StockAnalysisRow b, String sortBy, boolean ascending) {
-        int result = 0;
+        int result;
         
         switch (sortBy.toLowerCase()) {
             case "secid":
@@ -117,13 +115,6 @@ public class StockAnalysisService {
     }
     
     private int compareBigDecimal(BigDecimal a, BigDecimal b) {
-        if (a == null && b == null) return 0;
-        if (a == null) return -1;
-        if (b == null) return 1;
-        return a.compareTo(b);
-    }
-    
-    private int compareOffsetDateTime(OffsetDateTime a, OffsetDateTime b) {
         if (a == null && b == null) return 0;
         if (a == null) return -1;
         if (b == null) return 1;

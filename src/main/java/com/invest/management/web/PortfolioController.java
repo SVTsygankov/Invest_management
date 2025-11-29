@@ -203,7 +203,7 @@ public class PortfolioController {
                 brokerReportService.processReport(p, file, user);
                 successCount++;
             } catch (Exception e) {
-                if (errors.length() > 0) {
+                if (errors.length() != 0) {
                     errors.append("; ");
                 }
                 errors.append(String.format("Ошибка при обработке файла %s: %s", 
@@ -226,7 +226,7 @@ public class PortfolioController {
                 }
             }
         }
-        if (errors.length() > 0) {
+        if (errors.length() != 0) {
             redirectAttributes.addFlashAttribute("error", errors.toString());
         }
 

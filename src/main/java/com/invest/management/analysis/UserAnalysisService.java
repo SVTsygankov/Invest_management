@@ -1,7 +1,6 @@
 package com.invest.management.analysis;
 
 import com.invest.management.moex.MoexStock;
-import com.invest.management.moex.MoexStockRepository;
 import com.invest.management.user.AppUser;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -22,14 +21,11 @@ public class UserAnalysisService {
 
     private final UserAnalysisRepository userAnalysisRepository;
     private final StockAnalysisRepository stockAnalysisRepository;
-    private final MoexStockRepository stockRepository;
 
     public UserAnalysisService(UserAnalysisRepository userAnalysisRepository,
-                              StockAnalysisRepository stockAnalysisRepository,
-                              MoexStockRepository stockRepository) {
+                              StockAnalysisRepository stockAnalysisRepository) {
         this.userAnalysisRepository = userAnalysisRepository;
         this.stockAnalysisRepository = stockAnalysisRepository;
-        this.stockRepository = stockRepository;
     }
 
     @Transactional(readOnly = true)
@@ -78,7 +74,7 @@ public class UserAnalysisService {
     }
 
     private int compareRows(UserAnalysisRow a, UserAnalysisRow b, String sortBy, boolean ascending) {
-        int result = 0;
+        int result;
         StockAnalysis saA = a.userAnalysis().getStockAnalysis();
         StockAnalysis saB = b.userAnalysis().getStockAnalysis();
         MoexStock stockA = saA != null ? saA.getStock() : null;

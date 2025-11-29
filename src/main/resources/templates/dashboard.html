@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Invest Management | Панель</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            padding: 2rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .action-card {
+            flex: 1 1 240px;
+            background: rgba(51, 65, 85, 0.4);
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .action-card a[role="button"] {
+            display: inline-block;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Добро пожаловать!</h1>
+    <p class="subtitle">В ближайшем будущем здесь появится управление портфелями, анализ уровней поддержки и справочник акций Мосбиржи.</p>
+
+    <section class="actions">
+        <article class="action-card">
+            <h3>Портфели</h3>
+            <p>Управляйте своими инвестиционными портфелями, загружайте отчеты брокера и отслеживайте текущие позиции.</p>
+            <a href="/portfolios" role="button">Мои портфели</a>
+        </article>
+        <article class="action-card">
+            <h3>Список бумаг</h3>
+            <p>Скоро вы сможете просматривать актуальный список акций Мосбиржи и импортировать данные с биржи.</p>
+        </article>
+        <article class="action-card">
+            <h3>Личный анализ</h3>
+            <p>Фиксируйте уровни поддержки/сопротивления и отслеживайте их изменения по каждой бумаге.</p>
+            <a href="/analysis" role="button">Перейти к анализу</a>
+        </article>
+        <article class="action-card">
+            <h3>Настройки профиля</h3>
+            <p>Изменение пароля, настройка уведомлений и управление подписками появятся на этой панели.</p>
+        </article>
+        <article class="action-card" sec:authorize="hasRole('ADMIN')">
+            <h3>Управление данными MOEX</h3>
+            <p>Обновляйте справочники и загружайте акции списка A через API Мосбиржи.</p>
+            <a href="/admin" role="button">Перейти в админ-панель</a>
+        </article>
+    </section>
+</main>
+</body>
+</html>
+

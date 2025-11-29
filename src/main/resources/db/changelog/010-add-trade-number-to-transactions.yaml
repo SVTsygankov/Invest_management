@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-add-trade-number-to-transactions
+      author: cursor-agent
+      changes:
+        - addColumn:
+            tableName: portfolio_transactions
+            columns:
+              - column:
+                  name: trade_number
+                  type: VARCHAR(50)
+                  remarks: "Номер сделки из брокерского отчета"
+        - addUniqueConstraint:
+            tableName: portfolio_transactions
+            columnNames: portfolio_id, trade_number
+            constraintName: uq_portfolio_transactions_trade_number
+            deferrable: false
+            initiallyDeferred: false
+        - createIndex:
+            tableName: portfolio_transactions
+            indexName: idx_portfolio_transactions_trade_number
+            columns:
+              - column:
+                  name: trade_number
+

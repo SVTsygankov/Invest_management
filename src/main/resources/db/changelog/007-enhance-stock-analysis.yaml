@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-add-expert-fields
+      author: cursor-agent
+      changes:
+        - addColumn:
+            tableName: stock_analysis
+            columns:
+              - column:
+                  name: expert_target
+                  type: NUMERIC(18,6)
+              - column:
+                  name: expert_target_updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: expert_recommendation
+                  type: VARCHAR(16)

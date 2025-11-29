@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Invest Management | Администрирование</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            padding: 2rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        main {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: rgba(51, 65, 85, 0.4);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .stat-card h2 {
+            margin: 0;
+            color: #38bdf8;
+            font-size: 2.5rem;
+        }
+
+        .actions form {
+            margin: 0;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border: none;
+            color: #f8fafc;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(14, 165, 233, 0.25);
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+        }
+
+        a.back-link {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <header>
+        <div>
+            <h1>Панель администратора</h1>
+            <p>Загрузка данных с Московской биржи</p>
+        </div>
+        <a class="back-link" href="/dashboard">← Вернуться в панель</a>
+    </header>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <section class="stats">
+        <article class="stat-card">
+            <p>Акции списка A</p>
+            <h2 th:text="${stockCount}">0</h2>
+        </article>
+        <article class="stat-card">
+            <p>Облигации</p>
+            <h2 th:text="${bondCount}">0</h2>
+        </article>
+    </section>
+
+    <section class="actions">
+        <form th:action="@{/admin/load/stocks}" method="post" style="margin-bottom: 1rem;">
+            <button type="submit">Загрузить / обновить акции списка A</button>
+        </form>
+        <form th:action="@{/admin/load/bonds}" method="post">
+            <button type="submit">Загрузить / обновить облигации</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>
+

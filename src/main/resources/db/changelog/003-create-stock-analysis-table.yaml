@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-stock-analysis-table
+      author: cursor-agent
+      changes:
+        - createTable:
+            tableName: stock_analysis
+            remarks: "User-specific support/resistance levels for securities"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: stock_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: support
+                  type: NUMERIC(18,4)
+              - column:
+                  name: support_updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: resistance
+                  type: NUMERIC(18,4)
+              - column:
+                  name: resistance_updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: stock_analysis
+            baseColumnNames: stock_id
+            constraintName: fk_stock_analysis_stock
+            referencedTableName: moex_stocks
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: stock_analysis
+            baseColumnNames: user_id
+            constraintName: fk_stock_analysis_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: stock_analysis
+            columnNames: stock_id, user_id
+            constraintName: uq_stock_analysis_stock_user
+

@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-create-user-analysis-table
+      author: cursor-agent
+      changes:
+        - createTable:
+            tableName: user_analysis
+            remarks: "User-specific support/resistance levels linked to stock_analysis"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: stock_analysis_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: support
+                  type: NUMERIC(18,4)
+              - column:
+                  name: support_updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: resistance
+                  type: NUMERIC(18,4)
+              - column:
+                  name: resistance_updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - addForeignKeyConstraint:
+            baseTableName: user_analysis
+            baseColumnNames: user_id
+            constraintName: fk_user_analysis_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: user_analysis
+            baseColumnNames: stock_analysis_id
+            constraintName: fk_user_analysis_stock_analysis
+            referencedTableName: stock_analysis
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: user_analysis
+            columnNames: user_id, stock_analysis_id
+            constraintName: uq_user_analysis_user_stock
+

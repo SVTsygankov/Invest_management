@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Invest Management | Регистрация</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #141e30, #243b55);
+        }
+
+        main {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            color: #e2e8f0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        .error {
+            color: #f87171;
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+        }
+
+        .cta-button {
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 1.5rem;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            border-radius: 12px;
+            font-weight: 600;
+            color: #0f172a;
+            background: linear-gradient(135deg, #22c55e, #14b8a6);
+            text-decoration: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(20, 184, 166, 0.35);
+        }
+
+        form label {
+            color: #cbd5f5;
+        }
+
+        form input {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            color: #e2e8f0;
+        }
+
+        form input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border: none;
+            color: #f8fafc;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.35);
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Invest Management</h1>
+    <p class="subtitle">Создайте аккаунт, чтобы отслеживать акции и уровни поддержки/сопротивления</p>
+
+    <a href="#registration-form" class="cta-button">Регистрация нового пользователя</a>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+    <form th:action="@{/register}"
+          id="registration-form"
+          th:object="${registrationForm}"
+          method="post"
+          novalidate>
+        <label>
+            E-mail
+            <input type="email"
+                   placeholder="you@example.com"
+                   th:field="*{email}">
+            <span class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+        </label>
+
+        <label>
+            Пароль
+            <input type="password"
+                   placeholder="минимум 8 символов"
+                   th:field="*{password}">
+            <span class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></span>
+        </label>
+
+        <label>
+            Подтверждение пароля
+            <input type="password"
+                   placeholder="повторите пароль"
+                   th:field="*{confirmPassword}">
+            <span class="error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></span>
+        </label>
+
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+</main>
+</body>
+</html>
+

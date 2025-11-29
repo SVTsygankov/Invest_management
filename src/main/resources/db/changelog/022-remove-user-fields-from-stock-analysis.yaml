@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-remove-user-fields-from-stock-analysis
+      author: cursor-agent
+      changes:
+        - dropUniqueConstraint:
+            tableName: stock_analysis
+            constraintName: uq_stock_analysis_stock_user
+        - dropForeignKeyConstraint:
+            baseTableName: stock_analysis
+            constraintName: fk_stock_analysis_user
+        - dropColumn:
+            tableName: stock_analysis
+            columnName: user_id
+        - dropColumn:
+            tableName: stock_analysis
+            columnName: support
+        - dropColumn:
+            tableName: stock_analysis
+            columnName: support_updated_at
+        - dropColumn:
+            tableName: stock_analysis
+            columnName: resistance
+        - dropColumn:
+            tableName: stock_analysis
+            columnName: resistance_updated_at
+        - addUniqueConstraint:
+            tableName: stock_analysis
+            columnNames: stock_id
+            constraintName: uq_stock_analysis_stock
+

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Создать портфель | Invest Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            padding: 2rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        main {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Создать новый портфель</h1>
+
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <form th:action="@{/portfolios}" th:object="${portfolio}" method="post">
+        <label for="name">
+            Название портфеля
+            <input type="text" id="name" th:field="*{name}" required placeholder="Например: Основной портфель">
+        </label>
+
+        <label for="brokerAccount">
+            Номер договора с брокером (необязательно)
+            <input type="text" id="brokerAccount" th:field="*{brokerAccount}" placeholder="Например: 42UUY">
+        </label>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit">Создать портфель</button>
+            <a href="/portfolios" role="button" class="secondary">Отмена</a>
+        </div>
+    </form>
+
+    <nav style="margin-top: 2rem;">
+        <ul>
+            <li><a href="/portfolios">← Назад к списку портфелей</a></li>
+        </ul>
+    </nav>
+</main>
+</body>
+</html>
+

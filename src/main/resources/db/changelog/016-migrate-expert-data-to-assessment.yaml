@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-migrate-expert-data-to-assessment
+      author: cursor-agent
+      changes:
+        - sql:
+            sql: >
+              INSERT INTO expert_assessment (stock_analysis_id, expert_target, expert_recommendation, expert_target_date, created_at)
+              SELECT 
+                  id as stock_analysis_id,
+                  expert_target,
+                  expert_recommendation,
+                  COALESCE(expert_target_updated_at::DATE, CURRENT_DATE) as expert_target_date,
+                  COALESCE(expert_target_updated_at, CURRENT_TIMESTAMP) as created_at
+              FROM stock_analysis
+              WHERE expert_target IS NOT NULL OR expert_recommendation IS NOT NULL;
+

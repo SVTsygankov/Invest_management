@@ -1,0 +1,82 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-normalize-portfolio-positions
+      author: cursor-agent
+      changes:
+        # Добавляем связи с moex_stocks и moex_bonds
+        - addColumn:
+            tableName: portfolio_positions
+            columns:
+              - column:
+                  name: moex_stock_id
+                  type: BIGINT
+                  remarks: "Связь с moex_stocks через ISIN (для акций)"
+              - column:
+                  name: moex_bond_id
+                  type: BIGINT
+                  remarks: "Связь с moex_bonds через ISIN (для облигаций)"
+        
+        # Создаем индексы для связей
+        - createIndex:
+            indexName: idx_portfolio_positions_moex_stock
+            tableName: portfolio_positions
+            columns:
+              - column:
+                  name: moex_stock_id
+        
+        - createIndex:
+            indexName: idx_portfolio_positions_moex_bond
+            tableName: portfolio_positions
+            columns:
+              - column:
+                  name: moex_bond_id
+        
+        # Добавляем foreign key constraints
+        - addForeignKeyConstraint:
+            baseTableName: portfolio_positions
+            baseColumnNames: moex_stock_id
+            constraintName: fk_portfolio_positions_moex_stock
+            referencedTableName: moex_stocks
+            referencedColumnNames: id
+            onDelete: SET NULL
+        
+        - addForeignKeyConstraint:
+            baseTableName: portfolio_positions
+            baseColumnNames: moex_bond_id
+            constraintName: fk_portfolio_positions_moex_bond
+            referencedTableName: moex_bonds
+            referencedColumnNames: id
+            onDelete: SET NULL
+        
+        # Заполняем связи на основе ISIN
+        - sql:
+            sql: |
+              UPDATE portfolio_positions pp
+              SET moex_stock_id = (
+                  SELECT id FROM moex_stocks ms 
+                  WHERE ms.isin = pp.isin 
+                  LIMIT 1
+              )
+              WHERE pp.security_type = 'STOCK' 
+                AND pp.moex_stock_id IS NULL;
+        
+        - sql:
+            sql: |
+              UPDATE portfolio_positions pp
+              SET moex_bond_id = (
+                  SELECT id FROM moex_bonds mb 
+                  WHERE mb.isin = pp.isin 
+                  LIMIT 1
+              )
+              WHERE pp.security_type = 'BOND' 
+                AND pp.moex_bond_id IS NULL;
+        
+        # Удаляем дублирующиеся колонки
+        - dropColumn:
+            tableName: portfolio_positions
+            columnName: security_name
+        
+        - dropColumn:
+            tableName: portfolio_positions
+            columnName: currency
+

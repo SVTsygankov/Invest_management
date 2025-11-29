@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-add-security-name-and-price
+      author: cursor-agent
+      changes:
+        - addColumn:
+            tableName: portfolio_positions
+            columns:
+              - column:
+                  name: security_name
+                  type: VARCHAR(255)
+                  remarks: "Название инструмента из отчета брокера (для погашенных инструментов)"
+              - column:
+                  name: last_known_price
+                  type: NUMERIC(18,6)
+                  remarks: "Последняя известная цена из отчета брокера (для погашенных инструментов)"
+

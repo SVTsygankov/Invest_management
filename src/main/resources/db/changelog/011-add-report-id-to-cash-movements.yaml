@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-add-report-id-to-cash-movements
+      author: cursor-agent
+      changes:
+        - addColumn:
+            tableName: portfolio_cash_movements
+            columns:
+              - column:
+                  name: report_id
+                  type: BIGINT
+                  remarks: "Связь с отчетом брокера"
+        - addForeignKeyConstraint:
+            baseTableName: portfolio_cash_movements
+            baseColumnNames: report_id
+            constraintName: fk_portfolio_cash_movements_report
+            referencedTableName: broker_reports
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            tableName: portfolio_cash_movements
+            indexName: idx_portfolio_cash_movements_report_id
+            columns:
+              - column:
+                  name: report_id
+

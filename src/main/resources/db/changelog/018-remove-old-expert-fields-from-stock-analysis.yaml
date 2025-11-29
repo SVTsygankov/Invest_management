@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-remove-old-expert-fields-from-stock-analysis
+      author: cursor-agent
+      changes:
+        - dropColumn:
+            tableName: stock_analysis
+            columns:
+              - column:
+                  name: expert_target
+              - column:
+                  name: expert_target_updated_at
+              - column:
+                  name: expert_recommendation
+

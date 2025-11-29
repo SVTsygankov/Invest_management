@@ -1,0 +1,85 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-create-alor-tokens-table
+      author: cursor-agent
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: alor_user_tokens
+      changes:
+        - createTable:
+            tableName: alor_user_tokens
+            remarks: "Хранение зашифрованных ALOR API токенов для пользователей"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: environment
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+                  remarks: "test или production"
+              - column:
+                  name: encrypted_refresh_token
+                  type: TEXT
+                  constraints:
+                    nullable: false
+                  remarks: "Зашифрованный Refresh Token"
+              - column:
+                  name: trade_server_code
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: true
+                  remarks: "Код торгового сервера (например, MOEX, SPBX)"
+              - column:
+                  name: portfolio_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+                  remarks: "Связь с портфелем (опционально, без FK для гибкости)"
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+                    defaultComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+                    defaultComputed: CURRENT_TIMESTAMP
+        - addForeignKeyConstraint:
+            baseTableName: alor_user_tokens
+            baseColumnNames: user_id
+            constraintName: fk_alor_tokens_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+            preConditions:
+              - onFail: MARK_RAN
+              - not:
+                  - foreignKeyConstraintExists:
+                      constraintName: fk_alor_tokens_user
+                      tableName: alor_user_tokens
+        - createIndex:
+            indexName: idx_alor_tokens_user_env
+            tableName: alor_user_tokens
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: environment
+            unique: true
+            remarks: "Один токен на пользователя для каждого окружения"
+

@@ -1,0 +1,124 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-restructure-moex-stocks
+      author: cursor-agent
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: stock_analysis
+            constraintName: fk_stock_analysis_stock
+        - dropTable:
+            tableName: moex_stocks
+            cascadeConstraints: true
+        - createTable:
+            tableName: moex_stocks
+            remarks: "Detailed reference for MOEX equities"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: ticker
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name_ru
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name_en
+                  type: VARCHAR(255)
+              - column:
+                  name: isin
+                  type: VARCHAR(12)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: board_id
+                  type: BIGINT
+              - column:
+                  name: lot_size
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+                    defaultValueNumeric: 1
+              - column:
+                  name: currency_id
+                  type: BIGINT
+              - column:
+                  name: min_step
+                  type: DECIMAL(10,6)
+              - column:
+                  name: price_step
+                  type: DECIMAL(10,6)
+              - column:
+                  name: current_price
+                  type: DECIMAL(15,6)
+              - column:
+                  name: market_cap
+                  type: DECIMAL(20,2)
+              - column:
+                  name: sector_id
+                  type: BIGINT
+              - column:
+                  name: industry_id
+                  type: BIGINT
+              - column:
+                  name: trading_status
+                  type: VARCHAR(50)
+              - column:
+                  name: last_trade_date
+                  type: DATE
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: moex_stocks
+            baseColumnNames: board_id
+            constraintName: fk_moex_stocks_board
+            referencedTableName: boards
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: moex_stocks
+            baseColumnNames: currency_id
+            constraintName: fk_moex_stocks_currency
+            referencedTableName: currencies
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: moex_stocks
+            baseColumnNames: sector_id
+            constraintName: fk_moex_stocks_sector
+            referencedTableName: sectors
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: moex_stocks
+            baseColumnNames: industry_id
+            constraintName: fk_moex_stocks_industry
+            referencedTableName: industries
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: stock_analysis
+            baseColumnNames: stock_id
+            constraintName: fk_stock_analysis_stock
+            referencedTableName: moex_stocks
+            referencedColumnNames: id
+            onDelete: CASCADE
+

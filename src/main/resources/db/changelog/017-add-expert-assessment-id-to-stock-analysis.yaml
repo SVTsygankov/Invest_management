@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-add-expert-assessment-id-to-stock-analysis
+      author: cursor-agent
+      changes:
+        - addColumn:
+            tableName: stock_analysis
+            columns:
+              - column:
+                  name: expert_assessment_id
+                  type: BIGINT
+                  remarks: "Ссылка на последнюю экспертной оценку"
+        - addForeignKeyConstraint:
+            baseTableName: stock_analysis
+            baseColumnNames: expert_assessment_id
+            constraintName: fk_stock_analysis_expert_assessment
+            referencedTableName: expert_assessment
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            tableName: stock_analysis
+            indexName: idx_stock_analysis_expert_assessment_id
+            columns:
+              - column:
+                  name: expert_assessment_id
+        - sql:
+            sql: >
+              UPDATE stock_analysis sa
+              SET expert_assessment_id = (
+                  SELECT ea.id 
+                  FROM expert_assessment ea 
+                  WHERE ea.stock_analysis_id = sa.id 
+                  ORDER BY ea.expert_target_date DESC, ea.created_at DESC 
+                  LIMIT 1
+              )
+              WHERE EXISTS (
+                  SELECT 1 FROM expert_assessment ea2 WHERE ea2.stock_analysis_id = sa.id
+              );
+

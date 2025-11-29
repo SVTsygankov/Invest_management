@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузить отчет | Invest Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            padding: 2rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .file-input-wrapper {
+            margin: 1.5rem 0;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            background: rgba(51, 65, 85, 0.4);
+            color: #e2e8f0;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Загрузить отчет брокера</h1>
+    <p class="subtitle">Портфель: <strong th:text="${portfolio.name}"></strong></p>
+
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="info-box">
+        <p><strong>Информация:</strong></p>
+        <ul>
+            <li>Вы можете загрузить один или несколько HTML-файлов отчетов брокера</li>
+            <li>Отчеты должны быть в формате HTML, полученном от брокера</li>
+            <li>Система автоматически распарсит сделки и обновит позиции портфеля</li>
+            <li>Дубликаты отчетов за один период будут отклонены</li>
+        </ul>
+    </div>
+
+    <form th:action="@{/portfolios/{id}/upload(id=${portfolio.id})}" method="post" enctype="multipart/form-data">
+        <div class="file-input-wrapper">
+            <label for="files">
+                Выберите файлы отчетов
+                <input type="file" id="files" name="files" multiple accept=".html,.htm" required>
+            </label>
+            <small>Можно выбрать несколько файлов одновременно (Ctrl+Click или Cmd+Click)</small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit">Загрузить отчеты</button>
+            <a th:href="@{/portfolios/{id}(id=${portfolio.id})}" role="button" class="secondary">Отмена</a>
+        </div>
+    </form>
+
+    <nav style="margin-top: 2rem;">
+        <ul>
+            <li><a th:href="@{/portfolios/{id}(id=${portfolio.id})}">← Назад к портфелю</a></li>
+        </ul>
+    </nav>
+</main>
+</body>
+</html>
+

@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Invest Management | Администрирование: Stock Analysis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            padding: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        main {
+            width: 100%;
+            height: 100%;
+            padding: 1rem 3rem 0.5rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+
+        .table-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            max-height: 630px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            flex: 1 1 auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 0;
+            border-collapse: collapse;
+            font-size: 0.5rem;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 10;
+        }
+
+        th, td {
+            padding: 0.16rem 0.4rem;
+            white-space: nowrap;
+        }
+
+        td:nth-child(3) {
+            max-width: 140px;
+            white-space: normal;
+        }
+
+        table input[type="number"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.2rem 0.25rem;
+            font-size: 0.5rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.2rem 0.25rem;
+            font-size: 0.5rem;
+            min-width: 90px;
+        }
+
+        .recommendation-buy {
+            color: #22c55e;
+        }
+
+        .recommendation-hold {
+            color: #eab308;
+        }
+
+        .recommendation-sell {
+            color: #ef4444;
+        }
+
+        .recommendation-none {
+            color: #94a3b8;
+        }
+
+        .alert {
+            padding: 0.5rem 0.75rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+        }
+
+        dialog {
+            border: none;
+            padding: 0;
+            background: transparent;
+        }
+
+        dialog[open] {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        dialog::backdrop {
+            background: rgba(15, 23, 42, 0.75);
+        }
+
+        dialog article {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.75rem;
+            border-radius: 16px;
+            max-width: 760px;
+            max-height: 80vh;
+            overflow: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        .muted {
+            color: #c4b5fd;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .sort-buttons {
+            display: inline-flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            margin-left: 0.25rem;
+            vertical-align: middle;
+        }
+
+        .sort-button {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.4rem;
+            line-height: 0.6;
+            color: #64748b;
+            opacity: 0.6;
+            transition: opacity 0.2s, color 0.2s;
+        }
+
+        .sort-button:hover {
+            opacity: 1;
+            color: #e2e8f0;
+        }
+
+        .sort-button.active {
+            opacity: 1;
+            color: #3b82f6;
+        }
+
+        th {
+            position: relative;
+            padding-right: 1.5rem !important;
+        }
+
+        th .sort-buttons {
+            position: absolute;
+            right: 0.25rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #analysis-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .info-row {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body th:data-open-dialog="${openAddDialog}" th:data-newly-added-secid="${newlyAddedSecid}">
+<main>
+    <header>
+        <div>
+            <h1>Администрирование: Stock Analysis</h1>
+            <p class="muted">Глобальная таблица анализа акций. Управляйте экспертными оценками.</p>
+            <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                <a href="/admin/analysis" 
+                   role="button" 
+                   th:style="${currentTable == 'stock_analysis' ? 'background: #3b82f6; color: white; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem;' : 'background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem;'}">
+                    Stock Analysis
+                </a>
+                <a href="/admin/user-analysis" 
+                   role="button" 
+                   th:style="${currentTable == 'user_analysis' ? 'background: #3b82f6; color: white; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem;' : 'background: rgba(59, 130, 246, 0.2); color: #3b82f6; padding: 0.4rem 0.8rem; border-radius: 8px; text-decoration: none; font-size: 0.9rem;'}">
+                    User Analysis
+                </a>
+            </div>
+        </div>
+        <div class="actions">
+            <a href="/admin" role="button" class="secondary">← Назад в админ-панель</a>
+            <button type="button" id="refresh-button" class="secondary">
+                🔄 Обновить
+            </button>
+            <button type="button"
+                    id="add-button"
+                    th:disabled="${availableStocks == null || availableStocks.isEmpty()}">
+                Добавить акцию
+            </button>
+        </div>
+    </header>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-error" th:text="${errorMessage}"></div>
+
+    <div th:if="${hasRows}" id="analysis-table">
+        <div class="table-container">
+            <table role="grid">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>
+                        Тикер
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button" 
+                                    th:classappend="${currentSortBy == 'secid' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('secid', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'secid' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('secid', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th>
+                        Краткое наименование
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'shortname' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('shortname', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'shortname' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('shortname', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th>
+                        Текущая цена
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'marketprice' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('marketprice', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'marketprice' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('marketprice', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th>
+                        Оценка экспертов
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'experttarget' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('experttarget', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'experttarget' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('experttarget', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th>
+                        Обновлено
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'experttargetupdatedat' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('experttargetupdatedat', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'experttargetupdatedat' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('experttargetupdatedat', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th>
+                        Рекомендация
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'expertrecommendation' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('expertrecommendation', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'expertrecommendation' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('expertrecommendation', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th>
+                        Прогноз экспертов, %
+                        <div class="sort-buttons">
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'expertforecastpercent' && currentSortDir != 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('expertforecastpercent', 'asc')" title="Сортировать по возрастанию">▲</button>
+                            <button type="button" class="sort-button"
+                                    th:classappend="${currentSortBy == 'expertforecastpercent' && currentSortDir == 'desc' ? 'active' : ''}"
+                                    onclick="sortTable('expertforecastpercent', 'desc')" title="Сортировать по убыванию">▼</button>
+                        </div>
+                    </th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row, iterStat : ${rows}"
+                    th:attr="data-analysis-id=${row.analysis.id},data-secid=${row.analysis.stock.secid}">
+                    <td th:text="${iterStat.count}">1</td>
+                    <td th:text="${row.analysis.stock.secid}">TICK</td>
+                    <td th:text="${row.analysis.stock.shortname}">Название</td>
+                    <td th:text="${row.marketPrice != null ? #numbers.formatDecimal(row.marketPrice, 1, row.priceDecimals) : '—'}"
+                        class="text-right"
+                        th:attr="data-price-decimals=${row.priceDecimals}">—</td>
+                    <td>
+                        <span class="expert-field-clickable"
+                              th:attr="data-analysis-id=${row.analysis.id},data-field='expertTarget',data-price-decimals=${row.priceDecimals}"
+                              th:text="${row.expertTargetDisplay != null && !row.expertTargetDisplay.isEmpty() ? row.expertTargetDisplay : '—'}"
+                              style="cursor: pointer; text-decoration: underline; color: #3b82f6;">
+                        </span>
+                    </td>
+                    <td th:text="${row.analysis.expertTargetDate != null ? #temporals.format(row.analysis.expertTargetDate, 'dd.MM.yyyy') : '—'}">—</td>
+                    <td>
+                        <span class="expert-field-clickable"
+                              th:attr="data-analysis-id=${row.analysis.id},data-field='expertRecommendation'"
+                              th:class="${row.expertRecommendationClass}"
+                              th:text="${row.expertRecommendation != null ? row.expertRecommendation : '—'}"
+                              style="cursor: pointer; text-decoration: underline;">
+                        </span>
+                    </td>
+                    <td class="text-right"
+                        th:text="${row.expertForecastPercent != null ? #numbers.formatDecimal(row.expertForecastPercent, 1, 2) : '—'}">—</td>
+                    <td class="text-right">
+                        <button type="button"
+                                class="secondary outline"
+                                th:attr="data-delete-id=${row.analysis.id}"
+                                onclick="submitDelete(this)">
+                            Удалить
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    <p th:if="${!hasRows}" class="muted">Добавьте первую акцию, чтобы начать анализ.</p>
+</main>
+
+<form id="delete-form" th:action="@{/admin/analysis/delete}" method="post" hidden>
+    <input type="hidden" name="id" id="delete-id">
+</form>
+
+<dialog id="add-dialog">
+    <article>
+        <header>
+            <h2>Выберите акцию</h2>
+            <a href="#close" aria-label="Закрыть" class="close"
+               onclick="document.getElementById('add-dialog').close()"></a>
+        </header>
+        <form th:action="@{/admin/analysis/add}" method="post" id="add-form">
+            <table role="grid">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Тикер</th>
+                    <th>Краткое наименование</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="stock, iterStat : ${availableStocks}">
+                    <td th:text="${iterStat.count}">1</td>
+                    <td th:text="${stock.secid}">TICK</td>
+                    <td th:text="${stock.shortname}">Название</td>
+                    <td>
+                        <label>
+                            <input type="radio" name="secid"
+                                   th:value="${stock.secid}"
+                                   th:checked="${stock.secid == defaultSelection}">
+                            <span>Выбрать</span>
+                        </label>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <footer class="info-row">
+                <div class="muted">Выберите нужную бумагу и нажмите Enter. Esc закрывает окно.</div>
+                <div class="actions">
+                    <button type="button" class="secondary outline"
+                            onclick="document.getElementById('add-dialog').close()">Отмена
+                    </button>
+                </div>
+            </footer>
+        </form>
+    </article>
+</dialog>
+
+<!-- Модальное окно для ввода экспертной оценки с историей -->
+<dialog id="expert-assessment-dialog">
+    <article style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+        <header>
+            <h3>Экспертная оценка - История изменений</h3>
+        </header>
+        
+        <!-- Форма для добавления новой записи -->
+        <form id="expert-assessment-form" method="post" th:action="@{/admin/analysis/expert-assessment}">
+            <input type="hidden" name="analysisId" id="expert-assessment-analysis-id">
+            
+            <table style="width: 100%; margin-bottom: 1rem; border-collapse: collapse;">
+                <thead>
+                    <tr style="background-color: rgba(255, 255, 255, 0.1);">
+                        <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Целевая цена</th>
+                        <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Рекомендация</th>
+                        <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Дата оценки</th>
+                        <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Дата создания</th>
+                        <th style="padding: 0.5rem; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Новая запись (первая строка) -->
+                    <tr style="background-color: rgba(59, 130, 246, 0.15);">
+                        <td style="padding: 0.5rem;">
+                            <input type="number" 
+                                   name="expertTarget" 
+                                   id="expert-assessment-target"
+                                   step="0.01"
+                                   placeholder="Введите цену"
+                                   style="width: 100%; padding: 0.4rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #e2e8f0; border-radius: 4px;">
+                        </td>
+                        <td style="padding: 0.5rem;">
+                            <select name="expertRecommendation" id="expert-assessment-recommendation" style="width: 100%; padding: 0.4rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #e2e8f0; border-radius: 4px;">
+                                <option value="">—</option>
+                                <option value="Покупать">Покупать</option>
+                                <option value="Держать">Держать</option>
+                                <option value="Продавать">Продавать</option>
+                            </select>
+                        </td>
+                        <td style="padding: 0.5rem;">
+                            <input type="date" 
+                                   name="expertTargetDate" 
+                                   id="expert-assessment-date"
+                                   required
+                                   style="width: 100%; padding: 0.4rem; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #e2e8f0; border-radius: 4px;">
+                        </td>
+                        <td style="padding: 0.5rem; color: #94a3b8; font-size: 0.9em;">
+                            <em>Новая запись</em>
+                        </td>
+                        <td style="padding: 0.5rem; text-align: center;">
+                            <button type="submit" style="padding: 0.4rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">Добавить</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- История (загружается через JavaScript) -->
+            <div style="margin-top: 1rem;">
+                <h4 style="margin-bottom: 0.5rem;">История изменений:</h4>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: rgba(255, 255, 255, 0.05);">
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Целевая цена</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Рекомендация</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Дата оценки</th>
+                            <th style="padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Дата создания</th>
+                            <th style="padding: 0.5rem; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expert-assessment-history">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 1rem; color: #94a3b8;">
+                                Загрузка истории...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </table>
+            
+            <footer class="info-row">
+                <div class="muted">Заполните поля и нажмите "Добавить" для создания новой записи</div>
+                <div class="actions">
+                    <button type="button" class="secondary outline" onclick="closeExpertAssessmentDialog()">Закрыть</button>
+                </div>
+            </footer>
+        </form>
+    </article>
+</dialog>
+
+<script>
+    // Функции для работы с модальным окном экспертной оценки (определяем глобально)
+    function openExpertAssessmentDialog(analysisId, field, currentValue, priceDecimals) {
+        console.log('openExpertAssessmentDialog вызвана:', { analysisId, field, currentValue, priceDecimals });
+        const dialog = document.getElementById('expert-assessment-dialog');
+        const form = document.getElementById('expert-assessment-form');
+        const analysisIdInput = document.getElementById('expert-assessment-analysis-id');
+        const targetInput = document.getElementById('expert-assessment-target');
+        const recommendationSelect = document.getElementById('expert-assessment-recommendation');
+        const dateInput = document.getElementById('expert-assessment-date');
+        const historyTbody = document.getElementById('expert-assessment-history');
+        
+        if (!dialog) {
+            console.error('Диалог expert-assessment-dialog не найден');
+            return;
+        }
+        if (!form || !analysisIdInput) {
+            console.error('Элементы формы экспертной оценки не найдены');
+            return;
+        }
+        
+        // Устанавливаем ID анализа
+        analysisIdInput.value = analysisId;
+        
+        // Устанавливаем step для поля "Целевая цена" на основе decimals
+        if (targetInput && priceDecimals != null) {
+            const decimals = parseInt(priceDecimals, 10) || 2;
+            let step = '0.01';
+            if (decimals <= 0) {
+                step = '1';
+            } else {
+                step = '0.' + '0'.repeat(decimals - 1) + '1';
+            }
+            targetInput.step = step;
+            targetInput.setAttribute('data-price-decimals', decimals);
+        }
+        
+        // Очищаем форму
+        if (targetInput) targetInput.value = '';
+        if (recommendationSelect) recommendationSelect.value = '';
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
+        
+        // Загружаем историю
+        if (historyTbody) {
+            loadExpertAssessmentHistory(analysisId, historyTbody, priceDecimals);
+        }
+        
+        // Фокусируемся на нужном поле
+        setTimeout(() => {
+            if (field === 'expertTarget' && targetInput) {
+                targetInput.focus();
+            } else if (field === 'expertRecommendation' && recommendationSelect) {
+                recommendationSelect.focus();
+            }
+        }, 100);
+        
+        dialog.showModal();
+        console.log('Диалог открыт');
+    }
+
+    async function loadExpertAssessmentHistory(analysisId, tbody, priceDecimals) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem; color: #94a3b8;">Загрузка...</td></tr>';
+        
+        try {
+            const response = await fetch(`/admin/analysis/expert-assessment/${analysisId}/history`);
+            if (!response.ok) {
+                throw new Error('Ошибка загрузки истории: ' + response.status);
+            }
+            const history = await response.json();
+            
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem; color: #94a3b8;">История изменений отсутствует</td></tr>';
+                return;
+            }
+            
+            const decimals = priceDecimals != null ? parseInt(priceDecimals, 10) || 2 : 2;
+            
+            tbody.innerHTML = history.map(item => {
+                const createdAt = item.createdAt ? new Date(item.createdAt).toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : '—';
+                const targetDate = item.expertTargetDate ? new Date(item.expertTargetDate + 'T00:00:00').toLocaleDateString('ru-RU') : '—';
+                const recommendationClass = item.expertRecommendation === 'Покупать' ? 'recommendation-buy' :
+                                          item.expertRecommendation === 'Держать' ? 'recommendation-hold' :
+                                          item.expertRecommendation === 'Продавать' ? 'recommendation-sell' : '';
+                const targetValue = item.expertTarget ? parseFloat(item.expertTarget).toLocaleString('ru-RU', {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                }) : '—';
+                
+                return `
+                    <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);" data-assessment-id="${item.id}">
+                        <td style="padding: 0.5rem;">
+                            <input type="number" 
+                                   class="edit-target-input" 
+                                   data-assessment-id="${item.id}"
+                                   value="${item.expertTarget || ''}"
+                                   step="${decimals <= 0 ? '1' : '0.' + '0'.repeat(decimals - 1) + '1'}"
+                                   style="width: 100%; padding: 0.3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #e2e8f0; border-radius: 4px; display: none;">
+                            <span class="target-display">${targetValue}</span>
+                        </td>
+                        <td style="padding: 0.5rem;">
+                            <select class="edit-recommendation-select" 
+                                    data-assessment-id="${item.id}"
+                                    style="width: 100%; padding: 0.3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #e2e8f0; border-radius: 4px; display: none;">
+                                <option value="">—</option>
+                                <option value="Покупать" ${item.expertRecommendation === 'Покупать' ? 'selected' : ''}>Покупать</option>
+                                <option value="Держать" ${item.expertRecommendation === 'Держать' ? 'selected' : ''}>Держать</option>
+                                <option value="Продавать" ${item.expertRecommendation === 'Продавать' ? 'selected' : ''}>Продавать</option>
+                            </select>
+                            <span class="recommendation-display ${recommendationClass}">${item.expertRecommendation || '—'}</span>
+                        </td>
+                        <td style="padding: 0.5rem;">
+                            <input type="date" 
+                                   class="edit-date-input" 
+                                   data-assessment-id="${item.id}"
+                                   value="${item.expertTargetDate || ''}"
+                                   style="width: 100%; padding: 0.3rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #e2e8f0; border-radius: 4px; display: none;">
+                            <span class="date-display">${targetDate}</span>
+                        </td>
+                        <td style="padding: 0.5rem; color: #94a3b8; font-size: 0.9em;">${createdAt}</td>
+                        <td style="padding: 0.5rem; text-align: center;">
+                            <button type="button" 
+                                    class="edit-assessment-btn" 
+                                    data-assessment-id="${item.id}"
+                                    style="padding: 0.3rem 0.6rem; margin-right: 0.3rem; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                                Редактировать
+                            </button>
+                            <button type="button" 
+                                    class="save-assessment-btn" 
+                                    data-assessment-id="${item.id}"
+                                    style="padding: 0.3rem 0.6rem; margin-right: 0.3rem; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: none;">
+                                Сохранить
+                            </button>
+                            <button type="button" 
+                                    class="cancel-edit-btn" 
+                                    data-assessment-id="${item.id}"
+                                    style="padding: 0.3rem 0.6rem; margin-right: 0.3rem; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; display: none;">
+                                Отмена
+                            </button>
+                            <button type="button" 
+                                    class="delete-assessment-btn" 
+                                    data-assessment-id="${item.id}"
+                                    style="padding: 0.3rem 0.6rem; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                                Удалить
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Добавляем обработчики событий для кнопок
+            attachHistoryEventHandlers();
+        } catch (error) {
+            console.error('Ошибка загрузки истории:', error);
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 1rem; color: #ef4444;">Ошибка загрузки истории: ' + error.message + '</td></tr>';
+        }
+    }
+    
+    function attachHistoryEventHandlers() {
+        // Обработчики для кнопок редактирования
+        document.querySelectorAll('.edit-assessment-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const assessmentId = this.dataset.assessmentId;
+                const row = this.closest('tr');
+                enableEditMode(row, assessmentId);
+            });
+        });
+        
+        // Обработчики для кнопок сохранения
+        document.querySelectorAll('.save-assessment-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const assessmentId = this.dataset.assessmentId;
+                await saveAssessmentEdit(assessmentId);
+            });
+        });
+        
+        // Обработчики для кнопок отмены
+        document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const assessmentId = this.dataset.assessmentId;
+                const row = this.closest('tr');
+                cancelEditMode(row, assessmentId);
+            });
+        });
+        
+        // Обработчики для кнопок удаления
+        document.querySelectorAll('.delete-assessment-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const assessmentId = this.dataset.assessmentId;
+                if (confirm('Вы уверены, что хотите удалить эту запись?')) {
+                    await deleteAssessment(assessmentId);
+                }
+            });
+        });
+    }
+    
+    function enableEditMode(row, assessmentId) {
+        // Скрываем отображение и показываем поля ввода
+        row.querySelector('.target-display').style.display = 'none';
+        row.querySelector('.edit-target-input').style.display = 'block';
+        row.querySelector('.recommendation-display').style.display = 'none';
+        row.querySelector('.edit-recommendation-select').style.display = 'block';
+        row.querySelector('.date-display').style.display = 'none';
+        row.querySelector('.edit-date-input').style.display = 'block';
+        
+        // Показываем кнопки сохранения и отмены, скрываем редактирование и удаление
+        row.querySelector('.edit-assessment-btn').style.display = 'none';
+        row.querySelector('.delete-assessment-btn').style.display = 'none';
+        row.querySelector('.save-assessment-btn').style.display = 'inline-block';
+        row.querySelector('.cancel-edit-btn').style.display = 'inline-block';
+    }
+    
+    function cancelEditMode(row, assessmentId) {
+        // Показываем отображение и скрываем поля ввода
+        row.querySelector('.target-display').style.display = 'inline';
+        row.querySelector('.edit-target-input').style.display = 'none';
+        row.querySelector('.recommendation-display').style.display = 'inline';
+        row.querySelector('.edit-recommendation-select').style.display = 'none';
+        row.querySelector('.date-display').style.display = 'inline';
+        row.querySelector('.edit-date-input').style.display = 'none';
+        
+        // Показываем кнопки редактирования и удаления, скрываем сохранение и отмену
+        row.querySelector('.edit-assessment-btn').style.display = 'inline-block';
+        row.querySelector('.delete-assessment-btn').style.display = 'inline-block';
+        row.querySelector('.save-assessment-btn').style.display = 'none';
+        row.querySelector('.cancel-edit-btn').style.display = 'none';
+    }
+    
+    async function saveAssessmentEdit(assessmentId) {
+        const row = document.querySelector(`tr[data-assessment-id="${assessmentId}"]`);
+        if (!row) {
+            alert('Строка не найдена');
+            return;
+        }
+        
+        const targetInput = row.querySelector('.edit-target-input');
+        const recommendationSelect = row.querySelector('.edit-recommendation-select');
+        const dateInput = row.querySelector('.edit-date-input');
+        
+        const expertTarget = targetInput.value.trim() || null;
+        const expertRecommendation = recommendationSelect.value || null;
+        const expertTargetDate = dateInput.value || null;
+        
+        try {
+            const params = new URLSearchParams();
+            if (expertTarget) params.append('expertTarget', expertTarget);
+            if (expertRecommendation) params.append('expertRecommendation', expertRecommendation);
+            if (expertTargetDate) params.append('expertTargetDate', expertTargetDate);
+            
+            const response = await fetch(`/admin/analysis/expert-assessment/${assessmentId}?${params.toString()}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Ошибка при сохранении');
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                // Перезагружаем историю
+                const analysisIdInput = document.getElementById('expert-assessment-analysis-id');
+                const historyTbody = document.getElementById('expert-assessment-history');
+                const targetInputMain = document.getElementById('expert-assessment-target');
+                const priceDecimals = targetInputMain ? targetInputMain.getAttribute('data-price-decimals') : null;
+                await loadExpertAssessmentHistory(analysisIdInput.value, historyTbody, priceDecimals);
+                
+                // Обновляем основную таблицу
+                refreshTable();
+            } else {
+                alert('Ошибка: ' + (result.message || 'Не удалось сохранить изменения'));
+            }
+        } catch (error) {
+            console.error('Ошибка при сохранении:', error);
+            alert('Ошибка при сохранении: ' + error.message);
+        }
+    }
+    
+    async function deleteAssessment(assessmentId) {
+        try {
+            const response = await fetch(`/admin/analysis/expert-assessment/${assessmentId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Ошибка при удалении');
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                // Перезагружаем историю
+                const analysisIdInput = document.getElementById('expert-assessment-analysis-id');
+                const historyTbody = document.getElementById('expert-assessment-history');
+                const targetInputMain = document.getElementById('expert-assessment-target');
+                const priceDecimals = targetInputMain ? targetInputMain.getAttribute('data-price-decimals') : null;
+                await loadExpertAssessmentHistory(analysisIdInput.value, historyTbody, priceDecimals);
+                
+                // Обновляем основную таблицу
+                refreshTable();
+            } else {
+                alert('Ошибка: ' + (result.message || 'Не удалось удалить запись'));
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении:', error);
+            alert('Ошибка при удалении: ' + error.message);
+        }
+    }
+
+    function closeExpertAssessmentDialog() {
+        const dialog = document.getElementById('expert-assessment-dialog');
+        if (dialog) {
+            dialog.close();
+        }
+    }
+
+    (function () {
+        const expertFieldClickables = document.querySelectorAll('.expert-field-clickable');
+        const addForm = document.getElementById('add-form');
+        const dialog = document.getElementById('add-dialog');
+        const addButton = document.getElementById('add-button');
+        const shouldOpenDialog = document.body.dataset.openDialog === 'true';
+        const newlyAddedSecid = document.body.dataset.newlyAddedSecid;
+
+        if (addButton && dialog) {
+            addButton.addEventListener('click', () => {
+                console.debug('Opening add-dialog. options=%d', dialog.querySelectorAll('tbody tr').length);
+                dialog.showModal();
+            });
+        }
+
+        if (dialog) {
+            if (shouldOpenDialog && !dialog.open) {
+                console.debug('Auto-opening add-dialog');
+                dialog.showModal();
+            }
+            dialog.addEventListener('close', () => console.debug('Add-dialog closed'));
+            dialog.addEventListener('cancel', () => console.debug('Add-dialog cancelled'));
+        }
+
+
+        // Обработка кликов на поля экспертной оценки
+        console.log('Инициализация обработчиков для экспертных полей. Найдено элементов:', expertFieldClickables.length);
+        if (expertFieldClickables.length === 0) {
+            console.warn('Не найдено элементов с классом expert-field-clickable. Проверьте HTML разметку.');
+        }
+        expertFieldClickables.forEach((element, index) => {
+            console.log(`Настройка обработчика для элемента ${index}:`, {
+                analysisId: element.dataset.analysisId,
+                field: element.dataset.field,
+                text: element.textContent.trim(),
+                element: element
+            });
+            // Убеждаемся, что элемент кликабелен
+            element.style.cursor = 'pointer';
+            element.style.textDecoration = 'underline';
+            if (!element.style.color || element.style.color === '') {
+                element.style.color = '#3b82f6';
+            }
+            
+            element.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const analysisId = element.dataset.analysisId;
+                const field = element.dataset.field;
+                const currentValue = element.textContent.trim();
+                const priceDecimals = element.dataset.priceDecimals || '2';
+                console.log('Клик на экспертное поле:', { analysisId, field, currentValue, priceDecimals });
+                if (typeof openExpertAssessmentDialog === 'function') {
+                    openExpertAssessmentDialog(analysisId, field, currentValue, priceDecimals);
+                } else {
+                    console.error('Функция openExpertAssessmentDialog не определена!');
+                    alert('Ошибка: функция открытия диалога не найдена. Проверьте консоль браузера.');
+                }
+            });
+        });
+
+
+        if (addForm) {
+            const radioInputs = addForm.querySelectorAll('input[name="secid"]');
+            radioInputs.forEach(input => {
+                input.addEventListener('keydown', event => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addForm.requestSubmit();
+                    }
+                });
+                input.addEventListener('dblclick', () => addForm.requestSubmit());
+            });
+        }
+
+        const tableContainer = document.querySelector('.table-container');
+
+        if (tableContainer) {
+            tableContainer.addEventListener('wheel', event => {
+                const {scrollTop, scrollHeight, clientHeight} = tableContainer;
+                const atTop = scrollTop === 0 && event.deltaY < 0;
+                const atBottom = Math.ceil(scrollTop + clientHeight) >= scrollHeight && event.deltaY > 0;
+                if (!(atTop || atBottom)) {
+                    event.preventDefault();
+                    tableContainer.scrollTop += event.deltaY;
+                }
+            }, {passive: false});
+        }
+
+        // Если была добавлена новая акция, прокручиваем к ней
+        if (newlyAddedSecid) {
+            setTimeout(() => {
+                const row = document.querySelector('tr[data-secid="' + newlyAddedSecid + '"]');
+                if (row) {
+                    scrollIntoViewIfNeeded(row);
+                }
+            }, 100);
+        } else {
+            restoreScrollPosition();
+        }
+        console.debug('analysis page init: rows=%d, addButton=%s, shouldOpenDialog=%s, newlyAddedSecid=%s',
+            document.querySelectorAll('tr[data-analysis-id]').length,
+            !!addButton,
+            shouldOpenDialog,
+            newlyAddedSecid || 'none');
+
+        // Добавляем обработчик для кнопки обновления
+        const refreshButton = document.getElementById('refresh-button');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', refreshTable);
+        }
+    })();
+
+    // Функция для форматирования числа
+    function formatDecimal(value, decimals) {
+        if (!value) return '—';
+        const num = parseFloat(value);
+        if (isNaN(num)) return '—';
+        return num.toFixed(decimals);
+    }
+
+    // Функция обновления таблицы через AJAX
+    function refreshTable() {
+        const refreshButton = document.getElementById('refresh-button');
+        if (refreshButton) {
+            refreshButton.disabled = true;
+            refreshButton.textContent = '⏳ Обновление...';
+        }
+        
+        // Сохраняем текущую позицию прокрутки и фокус
+        const tableContainer = document.querySelector('.table-container');
+        const scrollTop = tableContainer ? tableContainer.scrollTop : 0;
+        const activeElement = document.activeElement;
+        let activeField = null;
+        let activeId = null;
+        
+        if (activeElement && activeElement.tagName === 'INPUT') {
+            activeField = activeElement.dataset.field;
+            activeId = activeElement.dataset.analysisId;
+        } else if (activeElement && activeElement.tagName === 'SELECT') {
+            activeField = 'recommendation';
+            const name = activeElement.name;
+            const match = name.match(/expertRecommendation\[(\d+)\]/);
+            if (match) {
+                activeId = match[1];
+            }
+        }
+        
+        // API endpoint для admin-stock-analysis не реализован, используем обычную перезагрузку страницы
+        window.location.reload();
+        return;
+        /* fetch('/admin/analysis/api/rows')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка при обновлении данных');
+                }
+                return response.json();
+            })
+            .then(data => {
+                const tbody = document.querySelector('#analysis-form tbody');
+                if (!tbody || !data.rows) {
+                    throw new Error('Неверный формат ответа');
+                }
+                
+                // Обновляем строки таблицы
+                data.rows.forEach((rowData) => {
+                    const row = tbody.querySelector(`tr[data-analysis-id="${rowData.analysisId}"]`);
+                    if (!row) return;
+                    
+                    // Обновляем значения
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 8) {
+                        // Получаем количество десятичных знаков для цены
+                        const priceDecimals = rowData.priceDecimals != null ? parseInt(rowData.priceDecimals, 10) : 2;
+                        
+                        // Текущая цена (индекс 3)
+                        cells[3].textContent = rowData.marketPrice ? formatDecimal(rowData.marketPrice, priceDecimals) : '—';
+                        // Обновляем data-атрибут для сохранения информации о decimals
+                        cells[3].setAttribute('data-price-decimals', priceDecimals);
+                        
+                        // Обновляем экспертную оценку (индекс 4 - "Оценка экспертов")
+                        if (cells.length > 4) {
+                            const expertTargetSpan = cells[4].querySelector('.expert-field-clickable');
+                            if (expertTargetSpan) {
+                                expertTargetSpan.textContent = rowData.expertTarget && rowData.expertTarget !== '—' ? rowData.expertTarget : '—';
+                            }
+                        }
+                        
+                        // Обновляем дату экспертной оценки (индекс 5)
+                        if (cells.length > 5 && rowData.expertTargetDate) {
+                            const date = new Date(rowData.expertTargetDate + 'T00:00:00');
+                            cells[5].textContent = date.toLocaleDateString('ru-RU', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric'
+                            });
+                        } else if (cells.length > 5) {
+                            cells[5].textContent = '—';
+                        }
+                        
+                        // Обновляем рекомендацию (индекс 6)
+                        if (cells.length > 6) {
+                            const recommendationSpan = cells[6].querySelector('.expert-field-clickable');
+                            if (recommendationSpan) {
+                                recommendationSpan.textContent = rowData.expertRecommendation || '—';
+                                // Обновляем класс для цвета
+                                recommendationSpan.className = 'expert-field-clickable';
+                                if (rowData.expertRecommendation === 'Покупать') {
+                                    recommendationSpan.classList.add('recommendation-buy');
+                                } else if (rowData.expertRecommendation === 'Держать') {
+                                    recommendationSpan.classList.add('recommendation-hold');
+                                } else if (rowData.expertRecommendation === 'Продавать') {
+                                    recommendationSpan.classList.add('recommendation-sell');
+                                }
+                            }
+                        }
+                        
+                        // Прогноз экспертов (индекс 7)
+                        if (cells.length > 7) {
+                            cells[7].textContent = rowData.expertForecastPercent ? formatDecimal(rowData.expertForecastPercent, 2) : '—';
+                        }
+                    }
+                });
+                
+                // Восстанавливаем позицию прокрутки
+                if (tableContainer) {
+                    tableContainer.scrollTop = scrollTop;
+                }
+                
+                // Восстанавливаем фокус не требуется для stock_analysis (нет редактируемых полей)
+            })
+            .catch(error => {
+                console.error('Ошибка при обновлении таблицы:', error);
+                alert('Не удалось обновить данные. Попробуйте перезагрузить страницу.');
+            })
+            .finally(() => {
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = '🔄 Обновить';
+                }
+            }); */
+    }
+
+    function submitDelete(button) {
+        const id = button.getAttribute('data-delete-id');
+        const deleteForm = document.getElementById('delete-form');
+        const input = document.getElementById('delete-id');
+        input.value = id;
+        deleteForm.submit();
+    }
+
+
+
+    // Обработка отправки формы экспертной оценки
+    (function() {
+        const expertAssessmentForm = document.getElementById('expert-assessment-form');
+        if (expertAssessmentForm) {
+            expertAssessmentForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                
+                const formData = new FormData(expertAssessmentForm);
+                const submitButton = expertAssessmentForm.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                
+                // Блокируем кнопку
+                submitButton.disabled = true;
+                submitButton.textContent = 'Сохранение...';
+                
+                try {
+                    const response = await fetch(expertAssessmentForm.action, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Обновляем историю и очищаем форму
+                        const analysisId = document.getElementById('expert-assessment-analysis-id').value;
+                        const historyTbody = document.getElementById('expert-assessment-history');
+                        if (historyTbody) {
+                            const targetInputMain = document.getElementById('expert-assessment-target');
+                            const priceDecimals = targetInputMain ? targetInputMain.getAttribute('data-price-decimals') : null;
+                            await loadExpertAssessmentHistory(analysisId, historyTbody, priceDecimals);
+                        }
+                        
+                        // Очищаем форму
+                        const form = document.getElementById('expert-assessment-form');
+                        if (form) {
+                            form.reset();
+                            const dateInput = document.getElementById('expert-assessment-date');
+                            if (dateInput) {
+                                const today = new Date().toISOString().split('T')[0];
+                                dateInput.value = today;
+                            }
+                            // Восстанавливаем analysisId после reset
+                            document.getElementById('expert-assessment-analysis-id').value = analysisId;
+                        }
+                        
+                        // Обновляем основную таблицу на странице (обновляем только экспертную оценку)
+                        refreshTable();
+                        
+                        // Разблокируем кнопку
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    } else {
+                        alert('Ошибка: ' + (result.message || 'Не удалось сохранить экспертной оценку'));
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    }
+                } catch (error) {
+                    console.error('Ошибка при сохранении экспертной оценки:', error);
+                    alert('Ошибка при сохранении: ' + error.message);
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                }
+            });
+        }
+        
+        // Закрытие диалога по Escape
+        const expertDialog = document.getElementById('expert-assessment-dialog');
+        if (expertDialog) {
+            expertDialog.addEventListener('cancel', function(event) {
+                event.preventDefault();
+                closeExpertAssessmentDialog();
+            });
+        }
+    })();
+
+    function queueFocus(target) {
+        try {
+            sessionStorage.setItem('analysisFocus', JSON.stringify(target));
+        } catch (err) {
+            console.warn('Не удалось сохранить фокус', err);
+        }
+    }
+
+    function saveScrollPosition() {
+        const tableContainer = document.querySelector('.table-container');
+        if (tableContainer) {
+            try {
+                sessionStorage.setItem('analysisScrollTop', String(tableContainer.scrollTop));
+            } catch (err) {
+                console.warn('Не удалось сохранить позицию прокрутки', err);
+            }
+        }
+    }
+
+    function restoreScrollPosition() {
+        const tableContainer = document.querySelector('.table-container');
+        if (!tableContainer) {
+            return;
+        }
+        try {
+            const stored = sessionStorage.getItem('analysisScrollTop');
+            if (stored) {
+                sessionStorage.removeItem('analysisScrollTop');
+                const scrollTop = parseInt(stored, 10);
+                if (!isNaN(scrollTop)) {
+                    // Используем requestAnimationFrame для восстановления после рендеринга
+                    requestAnimationFrame(() => {
+                        tableContainer.scrollTop = scrollTop;
+                    });
+                }
+            }
+        } catch (err) {
+            console.warn('Не удалось восстановить позицию прокрутки', err);
+        }
+    }
+
+    function scrollIntoViewIfNeeded(element) {
+        if (!element) {
+            return;
+        }
+        const tableContainer = document.querySelector('.table-container');
+        if (!tableContainer) {
+            return;
+        }
+        const containerRect = tableContainer.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        
+        // Проверяем, виден ли элемент в контейнере
+        const isVisible = elementRect.top >= containerRect.top && 
+                         elementRect.bottom <= containerRect.bottom;
+        
+        if (!isVisible) {
+            // Прокручиваем так, чтобы элемент был в центре видимой области
+            const row = element.closest('tr');
+            if (row) {
+                const rowOffset = row.offsetTop;
+                const containerHeight = tableContainer.clientHeight;
+                const rowHeight = row.offsetHeight;
+                tableContainer.scrollTop = rowOffset - (containerHeight / 2) + (rowHeight / 2);
+            }
+        }
+    }
+
+    function sortTable(sortBy, sortDir) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sortBy', sortBy);
+        url.searchParams.set('sortDir', sortDir);
+        window.location.href = url.toString();
+    }
+
+    function restoreFocus() {
+        const stored = sessionStorage.getItem('analysisFocus');
+        if (!stored) {
+            return;
+        }
+        sessionStorage.removeItem('analysisFocus');
+        try {
+            const target = JSON.parse(stored);
+            if (!target || !target.field) {
+                return;
+            }
+            // Восстанавливаем фокус после небольшой задержки, чтобы прокрутка успела восстановиться
+            setTimeout(() => {
+                if (target.field === 'addButton') {
+                    const addButton = document.getElementById('add-button');
+                    if (addButton) {
+                        addButton.focus();
+                    }
+                    return;
+                }
+                if (target.field === 'recommendation' && target.id) {
+                    const select = document.querySelector('select[name="expertRecommendation[' + target.id + ']"]');
+                    if (select) {
+                        scrollIntoViewIfNeeded(select);
+                        select.focus();
+                    }
+                    return;
+                }
+                // Для stock_analysis нет редактируемых полей, только экспертная оценка через модальное окно
+            }, 50);
+        } catch (err) {
+            console.error('Не удалось восстановить фокус', err);
+        }
+    }
+</script>
+</body>
+</html>
+
+

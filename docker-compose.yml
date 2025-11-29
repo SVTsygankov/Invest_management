@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: invest_management_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: invest_management
+      POSTGRES_USER: invest_user
+      POSTGRES_PASSWORD: invest_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - type: bind
+        source: C:/Users/user/IdeaProjects/DB_Invest_management
+        target: /var/lib/postgresql/data
+

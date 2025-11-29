@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${portfolio.name + ' | Invest Management'}">Портфель | Invest Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            padding: 2rem;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem; /* Уменьшили в 7 раз (было 2rem) */
+        }
+
+        .header-actions h1 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .portfolio-summary {
+            background: rgba(51, 65, 85, 0.4);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .portfolio-total {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .daily-change {
+            font-size: 1rem;
+        }
+
+        .daily-change.positive {
+            color: #22c55e;
+        }
+
+        .daily-change.negative {
+            color: #ef4444;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            color: #60a5fa;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(51, 65, 85, 0.2);
+        }
+
+        th {
+            background: rgba(59, 130, 246, 0.2);
+            padding: 0.75rem;
+            text-align: left;
+            color: #f1f5f9;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(148, 163, 184, 0.3);
+        }
+
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        tr:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .badge-stock {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .badge-bond {
+            background: rgba(168, 85, 247, 0.2);
+            color: #c084fc;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            color: #86efac;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-positive {
+            color: #22c55e;
+        }
+
+        .text-negative {
+            color: #ef4444;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            background-color: rgba(15, 23, 42, 0.95);
+            margin: 5% auto;
+            padding: 2rem;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 12px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close {
+            color: #94a3b8;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #e2e8f0;
+        }
+
+        .price-input-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 8px;
+        }
+
+        .price-input-row label {
+            flex: 1;
+            margin-right: 1rem;
+        }
+
+        .price-input-row input {
+            flex: 0 0 150px;
+        }
+
+        .warning-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        .error {
+            color: #fca5a5;
+            font-size: 0.85rem;
+            display: block;
+            margin-top: 0.25rem;
+        }
+
+        .price-update {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .price-increase {
+            background-color: rgba(34, 197, 94, 0.3) !important;
+            color: #22c55e !important;
+        }
+
+        .price-decrease {
+            background-color: rgba(239, 68, 68, 0.3) !important;
+            color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div class="header-actions">
+        <h1 th:text="${portfolio.name}">Портфель</h1>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <a th:href="@{/portfolios/{id}/upload(id=${portfolio.id})}" role="button" class="secondary">Загрузить отчет</a>
+            <button type="button" class="secondary" onclick="document.getElementById('alorTokenModal').style.display='block'">
+                Настроить ALOR API
+                <span th:if="${hasTestToken || hasProductionToken}" style="margin-left: 0.5rem; font-size: 0.8em; opacity: 0.8;">✓</span>
+            </button>
+            <form th:action="@{/portfolios/{id}/delete(id=${portfolio.id})}" method="post" style="display: inline;">
+                <button type="submit" class="contrast" onclick="return confirm('Вы уверены, что хотите удалить этот портфель?')">Удалить</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+    
+    <!-- Автоматическое открытие модального окна при ошибках валидации -->
+    <script th:if="${showAlorTokenModal != null && showAlorTokenModal}">
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('alorTokenModal').style.display = 'block';
+        });
+    </script>
+    
+    <!-- Предупреждение о позициях без цены приобретения -->
+    <div th:if="${hasPositionsRequiringPrice}" class="alert alert-error">
+        <strong>Внимание!</strong> У некоторых позиций не указана цена приобретения. 
+        Для расчета финансового результата за все время необходимо указать цену приобретения.
+        <a href="#" onclick="document.getElementById('priceInputModal').style.display='block'; return false;" 
+           style="margin-left: 1rem; text-decoration: underline;">Ввести цены</a>
+    </div>
+
+    <!-- Общая стоимость портфеля -->
+    <div class="portfolio-summary" th:if="${portfolioValue}">
+        <div class="portfolio-total">
+            <span th:text="${#numbers.formatDecimal(portfolioValue.totalValue, 1, 2)}">0,00</span> ₽
+        </div>
+        <div class="daily-change" 
+             th:classappend="${portfolioValue.dailyChange != null && portfolioValue.dailyChange.compareTo(T(java.math.BigDecimal).ZERO) >= 0 ? 'positive' : 'negative'}"
+             th:if="${portfolioValue.dailyChange != null}">
+            <span th:if="${portfolioValue.dailyChange.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+            <span th:text="${#numbers.formatDecimal(portfolioValue.dailyChange, 1, 2)}">0,00</span> ₽
+            <span th:if="${portfolioValue.dailyChangePercent != null}">
+                · 
+                <span th:if="${portfolioValue.dailyChangePercent.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                <span th:text="${#numbers.formatDecimal(portfolioValue.dailyChangePercent, 1, 2)}">0,00</span>%
+            </span>
+            <span> за сегодня</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Текущие позиции</h2>
+        <div th:if="${#lists.isEmpty(portfolioValue.positions) && portfolioValue.cashBalance.compareTo(T(java.math.BigDecimal).ZERO) == 0}" class="empty-state">
+            <p>Нет открытых позиций. Загрузите отчет брокера, чтобы начать отслеживание позиций.</p>
+        </div>
+        <table th:if="${!#lists.isEmpty(portfolioValue.positions) || portfolioValue.cashBalance.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+            <thead>
+                <tr>
+                    <th>Инструмент</th>
+                    <th>Тип</th>
+                    <th class="text-right">Количество, шт</th>
+                    <th class="text-right">Стоимость 1 шт, ₽</th>
+                    <th class="text-right">Цена приобретения, ₽</th>
+                    <th class="text-right">Стоимость всего, ₽</th>
+                    <th class="text-right">Изменение за день</th>
+                    <th class="text-right">Результат за все время</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Акции -->
+                <tr th:each="posValue : ${portfolioValue.positions}" 
+                    th:if="${posValue.securityType == 'STOCK'}"
+                    th:attr="data-isin=${posValue.position.isin}">
+                    <td>
+                        <span th:text="${posValue.shortName}">-</span>
+                        <span th:if="${posValue.position.averagePurchasePrice == null}" class="warning-badge">Требует ввода цены</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-stock">Акция</span>
+                    </td>
+                    <td class="text-right" th:text="${#numbers.formatInteger(posValue.position.quantity.setScale(0, T(java.math.RoundingMode).HALF_UP).intValue(), 0)}">-</td>
+                    <td class="text-right" th:text="${posValue.currentPrice != null ? #numbers.formatDecimal(posValue.currentPrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.position.averagePurchasePrice != null ? #numbers.formatDecimal(posValue.position.averagePurchasePrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.currentValue != null ? #numbers.formatDecimal(posValue.currentValue, 1, 2) : '-'}">-</td>
+                    <td class="text-right">
+                        <span th:if="${posValue.dailyChange != null}" 
+                              th:class="${posValue.dailyChange.compareTo(T(java.math.BigDecimal).ZERO) >= 0 ? 'text-positive' : 'text-negative'}">
+                            <span th:if="${posValue.dailyChange.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                            <span th:text="${#numbers.formatDecimal(posValue.dailyChange, 1, 2)}">0,00</span> ₽
+                            <span th:if="${posValue.dailyChangePercent != null}">
+                                · 
+                                <span th:if="${posValue.dailyChangePercent.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                                <span th:text="${#numbers.formatDecimal(posValue.dailyChangePercent, 1, 2)}">0,00</span>%
+                            </span>
+                        </span>
+                        <span th:if="${posValue.dailyChange == null}">-</span>
+                    </td>
+                    <td class="text-right">
+                        <span th:if="${posValue.totalReturn != null}" 
+                              th:class="${posValue.totalReturn.compareTo(T(java.math.BigDecimal).ZERO) >= 0 ? 'text-positive' : 'text-negative'}">
+                            <span th:if="${posValue.totalReturn.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                            <span th:text="${#numbers.formatDecimal(posValue.totalReturn, 1, 2)}">0,00</span> ₽
+                            <span th:if="${posValue.totalReturnPercent != null}">
+                                · 
+                                <span th:if="${posValue.totalReturnPercent.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                                <span th:text="${#numbers.formatDecimal(posValue.totalReturnPercent, 1, 2)}">0,00</span>%
+                            </span>
+                        </span>
+                        <span th:if="${posValue.totalReturn == null}">-</span>
+                    </td>
+                </tr>
+                <!-- Облигации -->
+                <tr th:each="posValue : ${portfolioValue.positions}" 
+                    th:if="${posValue.securityType == 'BOND'}"
+                    th:attr="data-isin=${posValue.position.isin}">
+                    <td>
+                        <span th:text="${posValue.shortName}">-</span>
+                        <span th:if="${posValue.position.averagePurchasePrice == null}" class="warning-badge">Требует ввода цены</span>
+                    </td>
+                    <td>
+                        <span class="badge badge-bond">Облигация</span>
+                    </td>
+                    <td class="text-right" th:text="${#numbers.formatInteger(posValue.position.quantity.setScale(0, T(java.math.RoundingMode).HALF_UP).intValue(), 0)}">-</td>
+                    <td class="text-right" th:text="${posValue.currentPrice != null ? #numbers.formatDecimal(posValue.currentPrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.position.averagePurchasePrice != null ? #numbers.formatDecimal(posValue.position.averagePurchasePrice, 1, posValue.decimals != null ? posValue.decimals : 2) : '-'}">-</td>
+                    <td class="text-right" th:text="${posValue.currentValue != null ? #numbers.formatDecimal(posValue.currentValue, 1, 2) : '-'}">-</td>
+                    <td class="text-right">
+                        <span th:if="${posValue.dailyChange != null}" 
+                              th:class="${posValue.dailyChange.compareTo(T(java.math.BigDecimal).ZERO) >= 0 ? 'text-positive' : 'text-negative'}">
+                            <span th:if="${posValue.dailyChange.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                            <span th:text="${#numbers.formatDecimal(posValue.dailyChange, 1, 2)}">0,00</span> ₽
+                            <span th:if="${posValue.dailyChangePercent != null}">
+                                · 
+                                <span th:if="${posValue.dailyChangePercent.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                                <span th:text="${#numbers.formatDecimal(posValue.dailyChangePercent, 1, 2)}">0,00</span>%
+                            </span>
+                        </span>
+                        <span th:if="${posValue.dailyChange == null}">-</span>
+                    </td>
+                    <td class="text-right">
+                        <span th:if="${posValue.totalReturn != null}" 
+                              th:class="${posValue.totalReturn.compareTo(T(java.math.BigDecimal).ZERO) >= 0 ? 'text-positive' : 'text-negative'}">
+                            <span th:if="${posValue.totalReturn.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                            <span th:text="${#numbers.formatDecimal(posValue.totalReturn, 1, 2)}">0,00</span> ₽
+                            <span th:if="${posValue.totalReturnPercent != null}">
+                                · 
+                                <span th:if="${posValue.totalReturnPercent.compareTo(T(java.math.BigDecimal).ZERO) >= 0}">+</span>
+                                <span th:text="${#numbers.formatDecimal(posValue.totalReturnPercent, 1, 2)}">0,00</span>%
+                            </span>
+                        </span>
+                        <span th:if="${posValue.totalReturn == null}">-</span>
+                    </td>
+                </tr>
+                <!-- Свободные денежные средства -->
+                <tr th:if="${portfolioValue.cashBalance != null && portfolioValue.cashBalance.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+                    <td>Свободные денежные средства</td>
+                    <td>-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right" th:text="${#numbers.formatDecimal(portfolioValue.cashBalance, 1, 2)}">-</td>
+                    <td class="text-right">-</td>
+                    <td class="text-right">-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav>
+        <ul>
+            <li><a href="/portfolios">← Назад к списку портфелей</a></li>
+        </ul>
+    </nav>
+</main>
+
+<!-- Модальное окно для настройки ALOR API токена -->
+<div id="alorTokenModal" class="modal" th:style="${showAlorTokenModal != null && showAlorTokenModal} ? 'display: block;' : ''">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Настройка ALOR API</h2>
+            <span class="close" onclick="document.getElementById('alorTokenModal').style.display='none'">&times;</span>
+        </div>
+        <p>Введите Refresh Token для подключения к ALOR OpenAPI. Токен будет зашифрован и сохранен в базе данных.</p>
+        
+        <!-- Статус токенов -->
+        <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(51, 65, 85, 0.3); border-radius: 8px;">
+            <h3 style="margin-top: 0; font-size: 1rem;">Статус токенов:</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <div>
+                    <strong>Тестовый контур:</strong>
+                    <span th:if="${hasTestToken}" style="color: #22c55e; margin-left: 0.5rem;">✓ Настроен</span>
+                    <span th:if="${!hasTestToken}" style="color: #ef4444; margin-left: 0.5rem;">✗ Не настроен</span>
+                </div>
+                <div>
+                    <strong>Боевой контур:</strong>
+                    <span th:if="${hasProductionToken}" style="color: #22c55e; margin-left: 0.5rem;">✓ Настроен</span>
+                    <span th:if="${!hasProductionToken}" style="color: #ef4444; margin-left: 0.5rem;">✗ Не настроен</span>
+                </div>
+            </div>
+        </div>
+
+        <form th:action="@{/portfolios/{id}/alor-token(id=${portfolio.id})}" 
+              th:object="${alorTokenForm}" 
+              method="post">
+            <label>
+                Окружение
+                <select th:field="*{environment}" required>
+                    <option value="">Выберите окружение</option>
+                    <option value="test">Тестовый контур (для разработки и тестирования)</option>
+                    <option value="production">Боевой контур (для работы с реальными данными)</option>
+                </select>
+                <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
+                    Администраторы могут использовать оба контура. Обычные пользователи работают только с боевым контуром.
+                </small>
+            </label>
+            <span class="error" th:if="${#fields.hasErrors('environment')}" th:errors="*{environment}"></span>
+
+            <label>
+                Refresh Token
+                <input type="text" 
+                       th:field="*{refreshToken}" 
+                       placeholder="Вставьте Refresh Token из alor.dev"
+                       required
+                       style="font-family: monospace; font-size: 0.9rem;">
+                <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
+                    Получите Refresh Token на <a href="https://alor.dev" target="_blank" style="color: #60a5fa;">alor.dev</a>
+                </small>
+            </label>
+            <span class="error" th:if="${#fields.hasErrors('refreshToken')}" th:errors="*{refreshToken}"></span>
+
+            <label>
+                Код торгового сервера (опционально)
+                <input type="text" 
+                       th:field="*{tradeServerCode}" 
+                       placeholder="MOEX, SPBX и т.д."
+                       maxlength="50">
+                <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
+                    Укажите код торгового сервера, если известен
+                </small>
+            </label>
+
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="secondary" onclick="document.getElementById('alorTokenModal').style.display='none'">Отмена</button>
+                <button type="submit">Сохранить токен</button>
+            </div>
+        </form>
+        
+        <!-- Секция тестирования -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(148, 163, 184, 0.2);">
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Тестирование</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">
+                Проверьте получение Access Token после сохранения Refresh Token
+            </p>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button type="button" class="secondary" th:data-portfolio-id="${portfolio.id}" onclick="testAlorToken('test', this)">
+                    Тест: Получить Access Token (тестовый)
+                </button>
+                <button type="button" class="secondary" th:data-portfolio-id="${portfolio.id}" onclick="testAlorToken('production', this)">
+                    Тест: Получить Access Token (боевой)
+                </button>
+            </div>
+            <div id="tokenTestResult" style="margin-top: 1rem; padding: 0.75rem; border-radius: 8px; display: none;"></div>
+        </div>
+        
+        <!-- Секция тестирования API данных -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(148, 163, 184, 0.2);">
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Тестирование API данных</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">
+                Введите ID портфеля в системе ALOR для тестирования получения данных
+            </p>
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #cbd5e1;">
+                    ID портфеля в ALOR:
+                    <input type="text" id="alorPortfolioId" 
+                           placeholder="Например: 7500297" 
+                           style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; 
+                                  background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); 
+                                  border-radius: 4px; color: #f1f5f9;">
+                </label>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #cbd5e1;">
+                    Окружение:
+                    <select id="alorEnvironment"
+                            style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; 
+                                   background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); 
+                                   border-radius: 4px; color: #f1f5f9;">
+                        <option value="test">Тестовый контур</option>
+                        <option value="production">Боевой контур</option>
+                    </select>
+                </label>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #cbd5e1;">
+                    Биржа:
+                    <select id="alorExchange" 
+                            style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; 
+                                   background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); 
+                                   border-radius: 4px; color: #f1f5f9;">
+                        <option value="MOEX">MOEX (Московская Биржа)</option>
+                        <option value="SPBX">SPBX (Биржа СПБ)</option>
+                    </select>
+                </label>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <button type="button" class="secondary" onclick="testAlorPortfolios()" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4);">
+                    Получить список портфелей
+                </button>
+            </div>
+            <div id="alorPortfoliosResult" style="margin-top: 1rem; padding: 0.75rem; border-radius: 8px; display: none; 
+                 background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); 
+                 max-height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <button type="button" class="secondary" onclick="testAlorData('positions')">
+                    Тест: Позиции
+                </button>
+                <button type="button" class="secondary" onclick="testAlorData('transactions')">
+                    Тест: Сделки
+                </button>
+                <button type="button" class="secondary" onclick="testAlorData('cash-movements')">
+                    Тест: Движения денег
+                </button>
+            </div>
+            
+            <div id="alorDataTestResult" style="margin-top: 1rem; padding: 0.75rem; border-radius: 8px; display: none; 
+                 background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); 
+                 max-height: 400px; overflow-y: auto;">
+            </div>
+        </div>
+        
+        <!-- Секция синхронизации позиций -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(148, 163, 184, 0.2);">
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Синхронизация позиций из ALOR</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">
+                Синхронизирует позиции портфеля из ALOR API. Существующие позиции будут обновлены, позиции которых нет в ALOR будут удалены.
+            </p>
+            
+            <form th:action="@{/portfolios/{id}/sync-from-alor(id=${portfolio.id})}" method="post" id="syncAlorForm">
+                <input type="hidden" name="environment" id="syncEnvironment" value="test">
+                <input type="hidden" name="exchange" id="syncExchange" value="MOEX">
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: #cbd5e1;">
+                        ID портфеля в ALOR:
+                        <input type="text" name="alorPortfolioId" id="syncAlorPortfolioId" 
+                               placeholder="Например: D99083" 
+                               required
+                               style="width: 100%; padding: 0.5rem; margin-top: 0.25rem; 
+                                      background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(148, 163, 184, 0.3); 
+                                      border-radius: 4px; color: #f1f5f9;">
+                    </label>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <button type="button" class="secondary" onclick="syncFromAlor()" 
+                            style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4); color: #4ade80;">
+                        Синхронизировать позиции
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Отображение проблемных позиций -->
+            <div th:if="${problematicPositions != null && !problematicPositions.isEmpty()}" 
+                 style="margin-top: 1rem; padding: 1rem; border-radius: 8px; 
+                        background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+                <h4 style="color: #fca5a5; margin-bottom: 0.5rem; font-size: 0.9rem;">Проблемные позиции (ISIN не найден):</h4>
+                <ul style="margin: 0; padding-left: 1.5rem; color: #fca5a5; font-size: 0.85rem;">
+                    <li th:each="pos : ${problematicPositions}" th:text="${pos}"></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для ввода цен приобретения -->
+<div id="priceInputModal" class="modal" th:style="${showPriceInputModal != null && showPriceInputModal} ? 'display: block;' : ''">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Введите цены приобретения</h2>
+            <span class="close" onclick="document.getElementById('priceInputModal').style.display='none'">&times;</span>
+        </div>
+        <p>При загрузке первого отчета в портфеле уже были позиции. Для расчета финансового результата за все время необходимо указать цену приобретения для каждой позиции.</p>
+        <form th:action="@{/portfolios/{id}/save-purchase-prices(id=${portfolio.id})}" method="post">
+            <div th:each="posWithName : ${positionsWithNames}" class="price-input-row">
+                <label th:for="${'price_' + posWithName.position.isin}">
+                    <strong th:text="${posWithName.name}">Название</strong>
+                    <br>
+                    <small th:text="${posWithName.position.isin}" style="color: #94a3b8;">ISIN</small>
+                    <span th:if="${posWithName.position.quantity != null}">
+                        · <span th:text="${#numbers.formatInteger(posWithName.position.quantity.setScale(0, T(java.math.RoundingMode).HALF_UP).intValue(), 0)}">0</span> шт.
+                    </span>
+                </label>
+                <input type="number" 
+                       step="0.01" 
+                       min="0"
+                       th:id="${'price_' + posWithName.position.isin}"
+                       th:name="${'price_' + posWithName.position.isin}"
+                       placeholder="Цена приобретения, ₽"
+                       required>
+            </div>
+            <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button type="button" class="secondary" onclick="document.getElementById('priceInputModal').style.display='none'">Отмена</button>
+                <button type="submit">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Закрытие модальных окон при клике вне их
+    window.onclick = function(event) {
+        const priceModal = document.getElementById('priceInputModal');
+        const alorModal = document.getElementById('alorTokenModal');
+        if (event.target == priceModal) {
+            priceModal.style.display = 'none';
+        }
+        if (event.target == alorModal) {
+            alorModal.style.display = 'none';
+        }
+    }
+    
+    // Функция для тестирования получения Access Token
+    async function testAlorToken(environment, buttonElement) {
+        // Получаем ID портфеля из data-атрибута кнопки или из URL
+        let portfolioId = buttonElement ? buttonElement.getAttribute('data-portfolio-id') : null;
+        if (!portfolioId) {
+            // Пытаемся получить из URL
+            const urlMatch = window.location.pathname.match(/\/portfolios\/(\d+)/);
+            portfolioId = urlMatch ? urlMatch[1] : null;
+        }
+        
+        if (!portfolioId) {
+            const resultDiv = document.getElementById('tokenTestResult');
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = 'rgba(239, 68, 68, 0.15)';
+            resultDiv.style.border = '2px solid rgba(239, 68, 68, 0.6)';
+            resultDiv.style.color = '#ef4444';
+            resultDiv.style.fontWeight = '500';
+            resultDiv.innerHTML = '<p style="margin: 0; color: #ef4444; font-weight: 600;"><strong>✗ Ошибка:</strong> <span style="color: #fca5a5; font-weight: 400;">Не удалось определить ID портфеля</span></p>';
+            return;
+        }
+        
+        const resultDiv = document.getElementById('tokenTestResult');
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = 'rgba(148, 163, 184, 0.1)';
+        resultDiv.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+        resultDiv.style.color = '#cbd5e1';
+        resultDiv.innerHTML = '<p style="margin: 0; color: #cbd5e1;">Загрузка...</p>';
+        
+        try {
+            const response = await fetch(`/portfolios/${portfolioId}/test-alor-token?environment=${environment}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                resultDiv.style.background = 'rgba(34, 197, 94, 0.15)';
+                resultDiv.style.border = '2px solid rgba(34, 197, 94, 0.6)';
+                resultDiv.style.color = '#10b981';
+                resultDiv.style.fontWeight = '500';
+                const expiresAt = data.expiresAt ? new Date(data.expiresAt).toLocaleString('ru-RU') : 'не указано';
+                resultDiv.innerHTML = `
+                    <p style="margin: 0 0 0.5rem 0; color: #10b981; font-weight: 600; font-size: 1rem;">
+                        <strong>✓ Access Token получен успешно!</strong>
+                    </p>
+                    <p style="margin: 0.25rem 0; color: #d1d5db;"><strong style="color: #9ca3af;">Окружение:</strong> <span style="color: #10b981;">${data.environment}</span></p>
+                    <p style="margin: 0.25rem 0; color: #d1d5db;"><strong style="color: #9ca3af;">Действителен до:</strong> <span style="color: #10b981;">${expiresAt}</span></p>
+                    <p style="margin: 0.25rem 0; color: #d1d5db;"><strong style="color: #9ca3af;">Срок действия:</strong> <span style="color: #10b981;">${data.expiresIn} секунд (${Math.floor(data.expiresIn / 60)} минут)</span></p>
+                    <p style="font-size: 0.85rem; margin-top: 0.75rem; word-break: break-all; color: #d1d5db;">
+                        <strong style="color: #9ca3af;">Access Token:</strong><br>
+                        <code style="background: rgba(0,0,0,0.4); padding: 0.5rem; border-radius: 4px; display: inline-block; margin-top: 0.25rem; color: #f3f4f6; font-family: 'Courier New', monospace;">${data.accessToken.substring(0, 50)}...</code>
+                    </p>
+                `;
+            } else {
+                resultDiv.style.background = 'rgba(239, 68, 68, 0.15)';
+                resultDiv.style.border = '2px solid rgba(239, 68, 68, 0.6)';
+                resultDiv.style.color = '#ef4444';
+                resultDiv.style.fontWeight = '500';
+                resultDiv.innerHTML = `<p style="margin: 0; color: #ef4444; font-weight: 600;"><strong>✗ Ошибка:</strong> <span style="color: #fca5a5; font-weight: 400;">${data.error}</span></p>`;
+            }
+        } catch (error) {
+            resultDiv.style.background = 'rgba(239, 68, 68, 0.15)';
+            resultDiv.style.border = '2px solid rgba(239, 68, 68, 0.6)';
+            resultDiv.style.color = '#ef4444';
+            resultDiv.style.fontWeight = '500';
+            resultDiv.innerHTML = `<p style="margin: 0; color: #ef4444; font-weight: 600;"><strong>✗ Ошибка:</strong> <span style="color: #fca5a5; font-weight: 400;">${error.message}</span></p>`;
+        }
+    }
+    
+    // Функция для тестирования получения данных из ALOR API
+    async function testAlorData(dataType) {
+        // Получаем ID портфеля из URL
+        let portfolioId = null;
+        const urlMatch = window.location.pathname.match(/\/portfolios\/(\d+)/);
+        portfolioId = urlMatch ? urlMatch[1] : null;
+        
+        if (!portfolioId) {
+            alert('Не удалось определить ID портфеля');
+            return;
+        }
+        
+        const alorPortfolioId = document.getElementById('alorPortfolioId').value;
+        const exchange = document.getElementById('alorExchange').value;
+        const environmentSelect = document.getElementById('alorEnvironment');
+        const environment = environmentSelect ? environmentSelect.value : 'test';
+        
+        if (!alorPortfolioId) {
+            alert('Введите ID портфеля в системе ALOR');
+            return;
+        }
+        
+        const resultDiv = document.getElementById('alorDataTestResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p style="color: #94a3b8;">Загрузка...</p>';
+        
+        try {
+            let url = `/portfolios/${portfolioId}/test-alor-${dataType}?environment=${environment}&alorPortfolioId=${encodeURIComponent(alorPortfolioId)}&exchange=${encodeURIComponent(exchange)}`;
+            
+            if (dataType === 'transactions' || dataType === 'cash-movements') {
+                const from = new Date();
+                from.setDate(from.getDate() - 30);
+                const to = new Date();
+                url += `&from=${from.toISOString().split('T')[0]}&to=${to.toISOString().split('T')[0]}`;
+            }
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.success) {
+                let rawDataText = data.rawData;
+                // Пытаемся отформатировать JSON, если это JSON
+                try {
+                    const jsonData = JSON.parse(data.rawData);
+                    rawDataText = JSON.stringify(jsonData, null, 2);
+                } catch (e) {
+                    // Если не JSON, оставляем как есть
+                }
+                
+                resultDiv.innerHTML = `
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong style="color: #10b981;">✓ Данные получены успешно</strong>
+                    </div>
+                    <div style="margin-bottom: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
+                        <div>Окружение: ${data.environment}</div>
+                        <div>ALOR Portfolio ID: ${data.alorPortfolioId}</div>
+                        <div>Биржа: ${data.exchange || 'MOEX'}</div>
+                        ${data.from ? `<div>Период: ${data.from} - ${data.to}</div>` : ''}
+                    </div>
+                    <pre style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 4px; 
+                                overflow-x: auto; color: #f1f5f9; font-size: 0.8rem; 
+                                white-space: pre-wrap; word-wrap: break-word; margin: 0;">${rawDataText}</pre>
+                `;
+            } else {
+                resultDiv.style.color = '#fca5a5';
+                resultDiv.innerHTML = `<p><strong>✗ Ошибка:</strong> ${data.error}</p>`;
+            }
+        } catch (error) {
+            resultDiv.style.color = '#fca5a5';
+            resultDiv.innerHTML = `<p><strong>✗ Ошибка:</strong> ${error.message}</p>`;
+        }
+    }
+    
+    // Функция для синхронизации позиций из ALOR
+    function syncFromAlor() {
+        const alorPortfolioId = document.getElementById('alorPortfolioId')?.value || 
+                                document.getElementById('syncAlorPortfolioId')?.value;
+        const environmentSelect = document.getElementById('alorEnvironment');
+        const exchangeSelect = document.getElementById('alorExchange');
+        
+        if (!alorPortfolioId || alorPortfolioId.trim() === '') {
+            alert('Введите ID портфеля в системе ALOR');
+            return;
+        }
+        
+        // Устанавливаем значения в скрытые поля формы синхронизации
+        const syncForm = document.getElementById('syncAlorForm');
+        if (syncForm) {
+            document.getElementById('syncAlorPortfolioId').value = alorPortfolioId;
+            if (environmentSelect) {
+                document.getElementById('syncEnvironment').value = environmentSelect.value;
+            }
+            if (exchangeSelect) {
+                document.getElementById('syncExchange').value = exchangeSelect.value;
+            }
+            
+            // Подтверждение перед отправкой
+            if (confirm('Вы уверены, что хотите синхронизировать позиции? Существующие позиции будут обновлены, позиции которых нет в ALOR будут удалены.')) {
+                syncForm.submit();
+            }
+        } else {
+            alert('Форма синхронизации не найдена');
+        }
+    }
+    
+    // Функция для получения списка портфелей из JWT токена
+    async function testAlorPortfolios() {
+        let portfolioId = null;
+        const urlMatch = window.location.pathname.match(/\/portfolios\/(\d+)/);
+        portfolioId = urlMatch ? urlMatch[1] : null;
+        
+        if (!portfolioId) {
+            alert('Не удалось определить ID портфеля');
+            return;
+        }
+        
+        const environmentSelect = document.getElementById('alorEnvironment');
+        const environment = environmentSelect ? environmentSelect.value : 'test';
+        const resultDiv = document.getElementById('alorPortfoliosResult');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p style="color: #94a3b8;">Загрузка...</p>';
+        
+        try {
+            const response = await fetch(`/portfolios/${portfolioId}/test-alor-portfolios?environment=${environment}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                let portfoliosHtml = '';
+                if (data.portfolios && data.portfolios.length > 0) {
+                    portfoliosHtml = '<div style="margin-bottom: 0.5rem;"><strong style="color: #10b981;">✓ Найдено портфелей: ' + data.portfoliosCount + '</strong></div>';
+                    portfoliosHtml += '<div style="margin-bottom: 0.5rem;"><strong style="color: #9ca3af;">Список портфелей:</strong></div>';
+                    portfoliosHtml += '<ul style="list-style: none; padding: 0; margin: 0;">';
+                    data.portfolios.forEach((portfolio, index) => {
+                        portfoliosHtml += `<li style="padding: 0.5rem; margin-bottom: 0.25rem; background: rgba(59, 130, 246, 0.1); border-radius: 4px; cursor: pointer;" 
+                            onclick="document.getElementById('alorPortfolioId').value='${portfolio}'">
+                            <strong style="color: #60a5fa;">${portfolio}</strong>
+                            <span style="color: #94a3b8; font-size: 0.85rem; margin-left: 0.5rem;">(нажмите, чтобы использовать)</span>
+                        </li>`;
+                    });
+                    portfoliosHtml += '</ul>';
+                } else {
+                    portfoliosHtml = '<div style="color: #fca5a5;">Портфели не найдены в токене</div>';
+                }
+                
+                let payloadHtml = '';
+                if (data.tokenPayload) {
+                    payloadHtml = '<div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(148, 163, 184, 0.2);">';
+                    payloadHtml += '<div style="margin-bottom: 0.5rem;"><strong style="color: #9ca3af;">Полный payload JWT токена:</strong></div>';
+                    payloadHtml += '<pre style="background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 4px; overflow-x: auto; color: #f1f5f9; font-size: 0.8rem; white-space: pre-wrap; word-wrap: break-word; margin: 0;">';
+                    payloadHtml += JSON.stringify(data.tokenPayload, null, 2);
+                    payloadHtml += '</pre></div>';
+                }
+                
+                resultDiv.innerHTML = `
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong style="color: #10b981;">✓ Данные получены успешно</strong>
+                    </div>
+                    <div style="margin-bottom: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
+                        <div>Окружение: ${data.environment}</div>
+                    </div>
+                    ${portfoliosHtml}
+                    ${payloadHtml}
+                `;
+            } else {
+                resultDiv.style.color = '#fca5a5';
+                resultDiv.innerHTML = `<p><strong>✗ Ошибка:</strong> ${data.error}</p>`;
+            }
+        } catch (error) {
+            resultDiv.style.color = '#fca5a5';
+            resultDiv.innerHTML = `<p><strong>✗ Ошибка:</strong> ${error.message}</p>`;
+        }
+    }
+
+    // Автоматическое обновление данных портфеля каждую минуту
+    let portfolioUpdateInterval = null;
+    let previousValues = {}; // Храним предыдущие значения для подсветки
+    let highlightedElements = new Map(); // Храним элементы с подсветкой и их предыдущие значения
+
+    function startPortfolioUpdates() {
+        const portfolioId = getPortfolioId();
+        if (!portfolioId) return;
+        
+        // Обновляем сразу при загрузке
+        updatePortfolioValues(portfolioId);
+        
+        // Затем каждую минуту
+        portfolioUpdateInterval = setInterval(() => {
+            updatePortfolioValues(portfolioId);
+        }, 60000); // 60 секунд = 1 минута
+    }
+
+    function getPortfolioId() {
+        const urlMatch = window.location.pathname.match(/\/portfolios\/(\d+)/);
+        return urlMatch ? urlMatch[1] : null;
+    }
+
+    async function updatePortfolioValues(portfolioId) {
+        try {
+            const response = await fetch(`/portfolios/${portfolioId}/value`);
+            if (!response.ok) {
+                console.error('Ошибка при получении данных портфеля:', response.status);
+                return;
+            }
+            
+            const data = await response.json();
+            
+            // Обновляем общую стоимость портфеля
+            updatePortfolioSummary(data, previousValues);
+            
+            // Обновляем позиции в таблице
+            updatePositionsTable(data.positions, previousValues);
+            
+            // Сохраняем текущие значения для следующего сравнения
+            previousValues = {
+                totalValue: data.totalValue,
+                positions: data.positions.reduce((acc, pos) => {
+                    acc[pos.isin] = {
+                        currentPrice: pos.currentPrice,
+                        currentValue: pos.currentValue,
+                        dailyChange: pos.dailyChange,
+                        totalReturn: pos.totalReturn
+                    };
+                    return acc;
+                }, {})
+            };
+            
+        } catch (error) {
+            console.error('Ошибка при обновлении данных портфеля:', error);
+        }
+    }
+
+    function updatePortfolioSummary(data, prev) {
+        // Обновляем общую стоимость
+        const totalValueEl = document.querySelector('.portfolio-total span');
+        if (totalValueEl && data.totalValue != null) {
+            const newValue = formatDecimal(data.totalValue, 2);
+            const prevValue = prev?.totalValue;
+            highlightChange(totalValueEl, prevValue, data.totalValue);
+            totalValueEl.textContent = newValue + ' ₽';
+        }
+        
+        // Обновляем изменение за день
+        const dailyChangeEl = document.querySelector('.daily-change');
+        if (dailyChangeEl && data.dailyChange != null) {
+            const sign = data.dailyChange >= 0 ? '+' : '';
+            const changeText = sign + formatDecimal(data.dailyChange, 2) + ' ₽';
+            const percentText = data.dailyChangePercent != null 
+                ? ' · ' + (data.dailyChangePercent >= 0 ? '+' : '') + formatDecimal(data.dailyChangePercent, 2) + '%'
+                : '';
+            dailyChangeEl.innerHTML = changeText + percentText + ' <span>за сегодня</span>';
+            
+            // Обновляем класс для цвета
+            dailyChangeEl.className = 'daily-change ' + 
+                (data.dailyChange >= 0 ? 'positive' : 'negative');
+            
+            // Подсветка при изменении (используем сохраненное значение из highlightedElements или предыдущее)
+            const prevChange = highlightedElements.get(dailyChangeEl) ?? prev?.dailyChange;
+            highlightChange(dailyChangeEl, prevChange, data.dailyChange);
+        } else if (dailyChangeEl) {
+            // Если нет данных, убираем подсветку
+            removeHighlight(dailyChangeEl);
+        }
+    }
+
+    function updatePositionsTable(positions, prev) {
+        positions.forEach(pos => {
+            const row = document.querySelector(`tr[data-isin="${pos.isin}"]`);
+            if (!row) return;
+            
+            const prevPos = prev?.positions?.[pos.isin];
+            
+            // Обновляем текущую цену
+            const priceCell = row.querySelector('td:nth-child(4)');
+            if (priceCell && pos.currentPrice != null) {
+                const decimals = pos.decimals != null ? pos.decimals : 2;
+                const newPrice = formatDecimal(pos.currentPrice, decimals);
+                const prevPrice = highlightedElements.get(priceCell) ?? prevPos?.currentPrice;
+                highlightChange(priceCell, prevPrice, pos.currentPrice);
+                priceCell.textContent = newPrice;
+            } else if (priceCell) {
+                removeHighlight(priceCell);
+            }
+            
+            // Обновляем стоимость всего
+            const valueCell = row.querySelector('td:nth-child(6)');
+            if (valueCell && pos.currentValue != null) {
+                const newValue = formatDecimal(pos.currentValue, 2);
+                const prevValue = highlightedElements.get(valueCell) ?? prevPos?.currentValue;
+                highlightChange(valueCell, prevValue, pos.currentValue);
+                valueCell.textContent = newValue;
+            } else if (valueCell) {
+                removeHighlight(valueCell);
+            }
+            
+            // Обновляем изменение за день
+            const dailyChangeCell = row.querySelector('td:nth-child(7)');
+            if (dailyChangeCell) {
+                updateDailyChangeCell(dailyChangeCell, pos, prevPos);
+            }
+            
+            // Обновляем результат за все время
+            const totalReturnCell = row.querySelector('td:nth-child(8)');
+            if (totalReturnCell) {
+                updateTotalReturnCell(totalReturnCell, pos, prevPos);
+            }
+        });
+    }
+
+    function updateDailyChangeCell(cell, pos, prevPos) {
+        if (pos.dailyChange == null) {
+            cell.innerHTML = '-';
+            removeHighlight(cell);
+            return;
+        }
+        
+        const sign = pos.dailyChange >= 0 ? '+' : '';
+        const changeText = sign + formatDecimal(pos.dailyChange, 2) + ' ₽';
+        const percentText = pos.dailyChangePercent != null
+            ? ' · ' + (pos.dailyChangePercent >= 0 ? '+' : '') + formatDecimal(pos.dailyChangePercent, 2) + '%'
+            : '';
+        
+        const className = pos.dailyChange >= 0 ? 'text-positive' : 'text-negative';
+        cell.innerHTML = `<span class="${className}">${changeText}${percentText}</span>`;
+        
+        // Подсветка при изменении (используем сохраненное значение из highlightedElements или предыдущее)
+        const prevChange = highlightedElements.get(cell) ?? prevPos?.dailyChange;
+        highlightChange(cell, prevChange, pos.dailyChange);
+    }
+
+    function updateTotalReturnCell(cell, pos, prevPos) {
+        if (pos.totalReturn == null) {
+            cell.innerHTML = '-';
+            removeHighlight(cell);
+            return;
+        }
+        
+        const sign = pos.totalReturn >= 0 ? '+' : '';
+        const returnText = sign + formatDecimal(pos.totalReturn, 2) + ' ₽';
+        const percentText = pos.totalReturnPercent != null
+            ? ' · ' + (pos.totalReturnPercent >= 0 ? '+' : '') + formatDecimal(pos.totalReturnPercent, 2) + '%'
+            : '';
+        
+        const className = pos.totalReturn >= 0 ? 'text-positive' : 'text-negative';
+        cell.innerHTML = `<span class="${className}">${returnText}${percentText}</span>`;
+        
+        // Подсветка при изменении (используем сохраненное значение из highlightedElements или предыдущее)
+        const prevReturn = highlightedElements.get(cell) ?? prevPos?.totalReturn;
+        highlightChange(cell, prevReturn, pos.totalReturn);
+    }
+
+    function highlightChange(element, oldValue, newValue) {
+        if (oldValue == null || newValue == null) {
+            // Если нет старого или нового значения, убираем подсветку
+            removeHighlight(element);
+            return;
+        }
+        
+        if (oldValue === newValue) {
+            // Если значение не изменилось, убираем подсветку
+            removeHighlight(element);
+            return;
+        }
+        
+        // Удаляем старые классы подсветки
+        element.classList.remove('price-increase', 'price-decrease');
+        
+        // Добавляем новый класс подсветки в зависимости от направления изменения
+        const isIncrease = newValue > oldValue;
+        element.classList.add('price-update');
+        element.classList.add(isIncrease ? 'price-increase' : 'price-decrease');
+        
+        // Сохраняем элемент и его текущее значение для следующего обновления
+        highlightedElements.set(element, newValue);
+    }
+
+    function removeHighlight(element) {
+        element.classList.remove('price-update', 'price-increase', 'price-decrease');
+        highlightedElements.delete(element);
+    }
+
+    function formatDecimal(value, decimals) {
+        if (value == null) return '-';
+        return new Intl.NumberFormat('ru-RU', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        }).format(value);
+    }
+
+    // Запускаем при загрузке страницы
+    document.addEventListener('DOMContentLoaded', () => {
+        startPortfolioUpdates();
+    });
+
+    // Останавливаем при уходе со страницы
+    window.addEventListener('beforeunload', () => {
+        if (portfolioUpdateInterval) {
+            clearInterval(portfolioUpdateInterval);
+        }
+    });
+</script>
+</body>
+</html>

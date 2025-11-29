@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Invest Management | Вход</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+          crossorigin="anonymous">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+        }
+
+        main {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(15, 23, 42, 0.92);
+            border-radius: 16px;
+            padding: 2.5rem;
+            color: #e2e8f0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        form input {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #e2e8f0;
+        }
+
+        form input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            margin-top: 1rem;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border: none;
+            color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .link {
+            display: block;
+            text-align: center;
+            margin-top: 1.25rem;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Invest Management</h1>
+    <p class="subtitle">Авторизуйтесь, чтобы перейти в панель управления</p>
+
+    <div th:if="${param.error}" class="alert alert-error">
+        Неверный e-mail или пароль. Попробуйте снова.
+    </div>
+    <div th:if="${param.logout}" class="alert alert-success">
+        Вы успешно вышли из системы.
+    </div>
+
+    <form method="post" th:action="@{/login}">
+        <label>
+            E-mail
+            <input type="email" name="username" placeholder="you@example.com" required autofocus>
+        </label>
+        <label>
+            Пароль
+            <input type="password" name="password" placeholder="Пароль" required>
+        </label>
+        <button type="submit">Войти</button>
+    </form>
+
+    <a class="link" href="/">Нет аккаунта? Зарегистрируйтесь</a>
+</main>
+</body>
+</html>
+

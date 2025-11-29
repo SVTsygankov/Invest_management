@@ -1,0 +1,67 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-moex-stocks-table
+      author: cursor-agent
+      changes:
+        - createTable:
+            tableName: moex_stocks
+            remarks: "Reference data for Moscow Exchange equity securities"
+            columns:
+              - column:
+                  name: id
+                  type: BIGSERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: secid
+                  type: VARCHAR(20)
+                  remarks: "Ticker identifier (SECID)"
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: short_name
+                  type: VARCHAR(150)
+                  remarks: "Short security name as published by MOEX"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: isin
+                  type: VARCHAR(12)
+                  remarks: "International Securities Identification Number"
+              - column:
+                  name: reg_number
+                  type: VARCHAR(40)
+                  remarks: "Registration number"
+              - column:
+                  name: list_level
+                  type: SMALLINT
+                  remarks: "Listing level (1-3, according to MOEX)"
+              - column:
+                  name: face_value
+                  type: NUMERIC(18,2)
+                  remarks: "Nominal value"
+              - column:
+                  name: currency_id
+                  type: VARCHAR(3)
+                  remarks: "Settlement currency (e.g. RUB, USD)"
+              - column:
+                  name: lot_size
+                  type: INTEGER
+                  remarks: "Trading lot size"
+              - column:
+                  name: board_id
+                  type: VARCHAR(6)
+                  remarks: "Primary trading board identifier"
+              - column:
+                  name: trade_status
+                  type: VARCHAR(20)
+                  remarks: "Trading status (e.g. 'traded', 'suspended')"
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+

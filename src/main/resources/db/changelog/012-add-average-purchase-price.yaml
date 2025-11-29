@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-add-average-purchase-price
+      author: cursor-agent
+      changes:
+        - addColumn:
+            tableName: portfolio_positions
+            columns:
+              - column:
+                  name: average_purchase_price
+                  type: NUMERIC(18,6)
+                  remarks: "Средневзвешенная цена приобретения инструмента"
+

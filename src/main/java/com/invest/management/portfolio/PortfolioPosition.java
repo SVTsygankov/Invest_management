@@ -42,6 +42,9 @@ public class PortfolioPosition {
     @Column(name = "last_known_price", precision = 18, scale = 6)
     private BigDecimal lastKnownPrice;
 
+    @Column(name = "security_name", length = 255)
+    private String securityName; // Название из отчета (fallback для погашенных облигаций)
+
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
@@ -96,16 +99,31 @@ public class PortfolioPosition {
     }
 
     /**
-     * Получает название инструмента из MOEX справочника или возвращает ISIN
+     * Получает название инструмента из MOEX справочника, из отчета или возвращает ISIN
+     * Приоритет: MOEX справочник > название из отчета > ISIN
      */
     public String getSecurityName() {
+        // ПРИОРИТЕТ 1: Используем данные из MOEX справочника
         if (moexStock != null && moexStock.getShortname() != null) {
             return moexStock.getShortname();
         }
         if (moexBond != null && moexBond.getShortname() != null) {
             return moexBond.getShortname();
         }
+        // ПРИОРИТЕТ 2: Используем название из отчета (fallback для погашенных облигаций)
+        if (securityName != null && !securityName.isEmpty() && !securityName.equals(isin)) {
+            return securityName;
+        }
+        // ПРИОРИТЕТ 3: Возвращаем ISIN
         return isin;
+    }
+
+    public String getSecurityNameFromReport() {
+        return securityName;
+    }
+
+    public void setSecurityName(String securityName) {
+        this.securityName = securityName;
     }
 
     /**

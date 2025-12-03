@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -144,6 +146,20 @@ public class BrokerReportService {
                 cashMovementRepository.save(movement);
             }
 
+            // Проверяем итоговые суммы движений денежных средств
+            List<String> validationErrors = new ArrayList<>();
+            validateCashMovementTotals(portfolio, parsed, validationErrors);
+            
+            // Проверяем итоговые суммы транзакций
+            validateTransactionTotals(portfolio, parsed, validationErrors);
+            
+            // Если есть ошибки валидации, логируем и выбрасываем исключение
+            if (!validationErrors.isEmpty()) {
+                String errorMessage = "Отчет загружен с ошибками:\n" + String.join("\n", validationErrors);
+                log.warn("Ошибки валидации отчета {} для портфеля {}: {}", fileName, portfolio.getId(), errorMessage);
+                throw new IllegalArgumentException(errorMessage);
+            }
+
             // Обновляем конечные позиции только если новый отчет новее или равен максимальному периоду
             Optional<java.time.LocalDate> maxPeriodEnd = reportRepository.findMaxReportPeriodEnd(portfolio);
             boolean shouldUpdatePositions = maxPeriodEnd.isEmpty() || 
@@ -154,13 +170,17 @@ public class BrokerReportService {
                     portfolio.getId(), parsed.getReportPeriodStart(), parsed.getReportPeriodEnd(), 
                     maxPeriodEnd.orElse(null));
                 positionService.setEndPeriodPositions(portfolio, parsed.getEndPeriodPositions());
-                
-                // Пересчитываем среднюю цену приобретения на основе всех транзакций покупки
-                positionService.recalculateAveragePrices(portfolio);
             } else {
                 log.info("Пропуск обновления конечных позиций для портфеля {} (отчет за период {} - {} старше максимального периода {})",
                     portfolio.getId(), parsed.getReportPeriodStart(), parsed.getReportPeriodEnd(), maxPeriodEnd.get());
             }
+            
+            // ВСЕГДА пересчитываем среднюю цену приобретения на основе всех транзакций покупки
+            // Это необходимо, чтобы средняя цена рассчитывалась правильно независимо от порядка загрузки отчетов
+            // Транзакции уже сохранены в БД, поэтому можем пересчитать среднюю цену для всех позиций
+            log.info("Пересчет средней цены приобретения для портфеля {} после загрузки отчета за период {} - {}",
+                portfolio.getId(), parsed.getReportPeriodStart(), parsed.getReportPeriodEnd());
+            positionService.recalculateAveragePrices(portfolio);
 
             log.info("Обработан отчет {} для портфеля {}: {} транзакций, {} движений денежных средств, {} конечных позиций",
                     fileName, portfolio.getId(), parsed.getTransactions().size(), parsed.getCashMovements().size(), 
@@ -246,6 +266,91 @@ public class BrokerReportService {
 
         public String getName() {
             return name;
+        }
+    }
+
+    /**
+     * Проверяет итоговые суммы движений денежных средств
+     * @param portfolio портфель
+     * @param parsed распарсенный отчет
+     * @param errors список для добавления ошибок
+     */
+    private void validateCashMovementTotals(Portfolio portfolio, BrokerReportParser.ParsedReport parsed, List<String> errors) {
+        if (parsed.getCashMovementTotalsByCurrency().isEmpty()) {
+            log.debug("Итоговые суммы движений денежных средств не найдены в отчете, пропускаем проверку");
+            return;
+        }
+
+        for (BrokerReportParser.CashMovementTotals reportTotals : parsed.getCashMovementTotalsByCurrency().values()) {
+            String currency = reportTotals.getCurrency();
+            BigDecimal reportCredit = reportTotals.getTotalCredit();
+            BigDecimal reportDebit = reportTotals.getTotalDebit();
+
+            // Получаем суммы из БД за период отчета
+            BigDecimal dbCredit = cashMovementRepository.sumCreditByPeriodAndCurrency(
+                portfolio, currency, parsed.getReportPeriodStart(), parsed.getReportPeriodEnd());
+            BigDecimal dbDebit = cashMovementRepository.sumDebitByPeriodAndCurrency(
+                portfolio, currency, parsed.getReportPeriodStart(), parsed.getReportPeriodEnd());
+
+            // Сравниваем с точностью до 2 знаков после запятой (как в БД)
+            BigDecimal creditDiff = reportCredit.subtract(dbCredit).abs();
+            BigDecimal debitDiff = reportDebit.subtract(dbDebit).abs();
+            BigDecimal threshold = new BigDecimal("0.01"); // Порог 1 копейка
+
+            if (creditDiff.compareTo(threshold) > 0) {
+                String error = String.format("Несовпадение суммы зачислений для валюты %s: в отчете %s, в БД %s (разница: %s)",
+                    currency, reportCredit, dbCredit, creditDiff);
+                log.warn(error);
+                errors.add(error);
+            }
+
+            if (debitDiff.compareTo(threshold) > 0) {
+                String error = String.format("Несовпадение суммы списаний для валюты %s: в отчете %s, в БД %s (разница: %s)",
+                    currency, reportDebit, dbDebit, debitDiff);
+                log.warn(error);
+                errors.add(error);
+            }
+
+            if (creditDiff.compareTo(threshold) <= 0 && debitDiff.compareTo(threshold) <= 0) {
+                log.info("Проверка итогов движений денежных средств для валюты {} прошла успешно: зачисление={}, списание={}",
+                    currency, reportCredit, reportDebit);
+            }
+        }
+    }
+
+    /**
+     * Проверяет итоговые суммы транзакций
+     * @param portfolio портфель
+     * @param parsed распарсенный отчет
+     * @param errors список для добавления ошибок
+     */
+    private void validateTransactionTotals(Portfolio portfolio, BrokerReportParser.ParsedReport parsed, List<String> errors) {
+        if (parsed.getTransactionTotalsByCurrency().isEmpty()) {
+            log.debug("Итоговые суммы транзакций не найдены в отчете, пропускаем проверку");
+            return;
+        }
+
+        for (BrokerReportParser.TransactionTotals reportTotals : parsed.getTransactionTotalsByCurrency().values()) {
+            String currency = reportTotals.getCurrency();
+            BigDecimal reportAmount = reportTotals.getTotalAmount();
+
+            // Получаем сумму из БД за период отчета
+            BigDecimal dbAmount = transactionRepository.sumAmountByPeriodAndCurrency(
+                portfolio, currency, parsed.getReportPeriodStart(), parsed.getReportPeriodEnd());
+
+            // Сравниваем с точностью до 2 знаков после запятой (как в БД)
+            BigDecimal diff = reportAmount.subtract(dbAmount).abs();
+            BigDecimal threshold = new BigDecimal("0.01"); // Порог 1 копейка
+
+            if (diff.compareTo(threshold) > 0) {
+                String error = String.format("Несовпадение суммы транзакций для валюты %s: в отчете %s, в БД %s (разница: %s)",
+                    currency, reportAmount, dbAmount, diff);
+                log.warn(error);
+                errors.add(error);
+            } else {
+                log.info("Проверка итогов транзакций для валюты {} прошла успешно: сумма={}",
+                    currency, reportAmount);
+            }
         }
     }
 }

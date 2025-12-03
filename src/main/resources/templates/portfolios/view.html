@@ -24,11 +24,24 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
         }
 
+        /* Фиксированный хедер с кнопками */
         .header-actions {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.3rem; /* Уменьшили в 7 раз (было 2rem) */
+            margin-bottom: 0.3rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.98); /* Увеличил непрозрачность для предотвращения просвечивания */
+            padding: 0.5rem 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Добавил тень для лучшего разделения */
+            margin-top: -2.5rem; /* Компенсируем padding main */
+            margin-left: -2.5rem;
+            margin-right: -2.5rem;
+            padding-left: 2.5rem;
+            padding-right: 2.5rem;
         }
 
         .header-actions h1 {
@@ -36,21 +49,44 @@
             font-size: 1.2rem;
         }
 
+        /* Уменьшенные и выровненные кнопки */
+        .header-actions [role="button"],
+        .header-actions button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            min-height: auto;
+        }
+
+        .header-actions > div {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+
+        /* Фиксированный блок с общей стоимостью портфеля (уменьшен до 1/16 экрана) */
         .portfolio-summary {
             background: rgba(51, 65, 85, 0.4);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
+            padding: 0.2rem 1rem; /* Минимальный padding по вертикали */
+            border-radius: 8px;
+            margin-bottom: 0.3rem;
+            position: sticky;
+            top: 45px; /* Высота header-actions (примерно 45px) */
+            z-index: 99;
+            backdrop-filter: blur(10px);
+            max-height: 6.25vh; /* 1/16 от высоты экрана */
+            overflow: hidden;
         }
 
         .portfolio-total {
-            font-size: 2rem;
+            font-size: 0.8rem; /* Значительно уменьшен */
             font-weight: bold;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.05rem;
+            line-height: 1;
         }
 
         .daily-change {
-            font-size: 1rem;
+            font-size: 0.6rem; /* Значительно уменьшен */
+            line-height: 1;
         }
 
         .daily-change.positive {
@@ -70,19 +106,34 @@
             margin-bottom: 1rem;
         }
 
+        /* Контейнер для таблицы */
+        .table-container {
+            position: relative;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             background: rgba(51, 65, 85, 0.2);
         }
 
+        /* Фиксированный заголовок таблицы */
+        thead {
+            position: sticky;
+            top: calc(45px + 25px); /* Высота header-actions (~45px) + portfolio-summary (уменьшенная ~25px) */
+            z-index: 98;
+            background: rgba(51, 65, 85, 0.95); /* Добавил фон для предотвращения просвечивания */
+            backdrop-filter: blur(10px);
+        }
+
         th {
-            background: rgba(59, 130, 246, 0.2);
+            background: rgba(59, 130, 246, 0.3);
             padding: 0.75rem;
             text-align: left;
             color: #f1f5f9;
             font-weight: 600;
             border-bottom: 2px solid rgba(148, 163, 184, 0.3);
+            backdrop-filter: blur(10px);
         }
 
         td {
@@ -238,6 +289,44 @@
             background-color: rgba(239, 68, 68, 0.3) !important;
             color: #ef4444 !important;
         }
+
+        /* Фиксированный футер с навигацией */
+        main > nav {
+            position: sticky;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 1rem 2rem;
+            margin-top: 2rem;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0 0 16px 16px;
+        }
+
+        main > nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        main > nav ul li {
+            margin: 0;
+        }
+
+        main > nav a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            display: inline-block;
+        }
+
+        main > nav a:hover {
+            color: #93c5fd;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -298,7 +387,9 @@
         <div th:if="${#lists.isEmpty(portfolioValue.positions) && portfolioValue.cashBalance.compareTo(T(java.math.BigDecimal).ZERO) == 0}" class="empty-state">
             <p>Нет открытых позиций. Загрузите отчет брокера, чтобы начать отслеживание позиций.</p>
         </div>
-        <table th:if="${!#lists.isEmpty(portfolioValue.positions) || portfolioValue.cashBalance.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+        <div class="table-container" 
+             th:if="${!#lists.isEmpty(portfolioValue.positions) || portfolioValue.cashBalance.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+            <table>
             <thead>
                 <tr>
                     <th>Инструмент</th>
@@ -411,6 +502,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
     <nav>

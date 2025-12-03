@@ -187,9 +187,26 @@ public class AlorPriceUpdater {
                 for (PortfolioPosition position : positions) {
                     BigDecimal oldPrice = position.getLastKnownPrice();
                     
+                    // Для облигаций цена из ALOR приходит в процентах от номинала
+                    // Конвертируем в абсолютную цену: цена_процент * номинал / 100
+                    BigDecimal finalPrice = price;
+                    if ("BOND".equals(position.getSecurityType())) {
+                        BigDecimal nominal = getBondNominal(position);
+                        if (nominal != null && nominal.compareTo(BigDecimal.ZERO) > 0) {
+                            // Конвертируем процент в абсолютную цену
+                            finalPrice = price.multiply(nominal)
+                                    .divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP);
+                            log.debug("Конвертирована цена облигации ISIN {} из ALOR: {}% от номинала {} = {} ₽", 
+                                    position.getIsin(), price, nominal, finalPrice);
+                        } else {
+                            log.warn("⚠ Не удалось найти номинал для облигации ISIN {}, используем цену как есть: {} ₽", 
+                                    position.getIsin(), price);
+                        }
+                    }
+                    
                     // Обновляем last_known_price, если цена изменилась
-                    if (oldPrice == null || !oldPrice.equals(price)) {
-                        position.setLastKnownPrice(price);
+                    if (oldPrice == null || !oldPrice.equals(finalPrice)) {
+                        position.setLastKnownPrice(finalPrice);
                         positionRepository.save(position);
                         totalUpdated++;
                         
@@ -199,14 +216,25 @@ public class AlorPriceUpdater {
                         }
 
                         if (oldPrice == null) {
-                            log.info("✓ Обновлена цена для бумаги: {} (ISIN: {}, тикер: {}) в портфеле {}: установлена цена {} ₽", 
-                                    shortName, position.getIsin(), symbol, position.getPortfolio().getId(), price);
+                            if ("BOND".equals(position.getSecurityType())) {
+                                log.info("✓ Обновлена цена для облигации: {} (ISIN: {}, тикер: {}) в портфеле {}: {}% от номинала = {} ₽", 
+                                        shortName, position.getIsin(), symbol, position.getPortfolio().getId(), price, finalPrice);
+                            } else {
+                                log.info("✓ Обновлена цена для бумаги: {} (ISIN: {}, тикер: {}) в портфеле {}: установлена цена {} ₽", 
+                                        shortName, position.getIsin(), symbol, position.getPortfolio().getId(), finalPrice);
+                            }
                         } else {
-                            BigDecimal priceChange = price.subtract(oldPrice);
+                            BigDecimal priceChange = finalPrice.subtract(oldPrice);
                             String changeSign = priceChange.compareTo(BigDecimal.ZERO) >= 0 ? "+" : "";
-                            log.info("✓ Обновлена цена для бумаги: {} (ISIN: {}, тикер: {}) в портфеле {}: {} ₽ -> {} ₽ (изменение: {}{} ₽)", 
-                                    shortName, position.getIsin(), symbol, position.getPortfolio().getId(), 
-                                    oldPrice, price, changeSign, priceChange);
+                            if ("BOND".equals(position.getSecurityType())) {
+                                log.info("✓ Обновлена цена для облигации: {} (ISIN: {}, тикер: {}) в портфеле {}: {}% от номинала = {} ₽ (было {} ₽, изменение: {}{} ₽)", 
+                                        shortName, position.getIsin(), symbol, position.getPortfolio().getId(), 
+                                        price, finalPrice, oldPrice, changeSign, priceChange);
+                            } else {
+                                log.info("✓ Обновлена цена для бумаги: {} (ISIN: {}, тикер: {}) в портфеле {}: {} ₽ -> {} ₽ (изменение: {}{} ₽)", 
+                                        shortName, position.getIsin(), symbol, position.getPortfolio().getId(), 
+                                        oldPrice, finalPrice, changeSign, priceChange);
+                            }
                         }
                     }
                 }
@@ -261,6 +289,31 @@ public class AlorPriceUpdater {
         } else if ("BOND".equals(position.getSecurityType())) {
             return bondRepository.findByIsin(isin)
                     .map(bond -> bond.getSecid())
+                    .orElse(null);
+        }
+
+        return null;
+    }
+
+    /**
+     * Получает номинал облигации из справочника MOEX
+     * @param position Позиция портфеля (облигация)
+     * @return Номинал облигации или null, если не найден
+     */
+    private BigDecimal getBondNominal(PortfolioPosition position) {
+        // Пробуем получить номинал через связь
+        if (position.getMoexBond() != null) {
+            BigDecimal facevalue = position.getMoexBond().getFacevalue();
+            if (facevalue != null && facevalue.compareTo(BigDecimal.ZERO) > 0) {
+                return facevalue;
+            }
+        }
+
+        // Если связь не установлена, ищем по ISIN в справочнике
+        String isin = position.getIsin();
+        if (isin != null && !isin.isEmpty()) {
+            return bondRepository.findByIsin(isin)
+                    .map(bond -> bond.getFacevalue())
                     .orElse(null);
         }
 

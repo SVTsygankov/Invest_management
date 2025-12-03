@@ -139,7 +139,8 @@ public class PortfolioValueService {
             }
         }
         
-        // Fallback: используем название из position.getSecurityName() (теперь это метод, который берет из MOEX)
+        // Fallback: используем название из position.getSecurityName() 
+        // (метод возвращает: MOEX справочник > название из отчета > ISIN)
         if (shortName.equals(isin)) {
             String securityName = position.getSecurityName();
             if (securityName != null && !securityName.isEmpty() && !securityName.equals(isin)) {

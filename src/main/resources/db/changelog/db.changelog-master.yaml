@@ -41,4 +41,6 @@ databaseChangeLog:
       file: db/changelog/021-create-user-analysis-table.yaml
   - include:
       file: db/changelog/022-remove-user-fields-from-stock-analysis.yaml
+  - include:
+      file: db/changelog/023-add-security-name-fallback.yaml
 

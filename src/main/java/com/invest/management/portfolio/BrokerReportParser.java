@@ -50,6 +50,8 @@ public class BrokerReportParser {
         private List<PortfolioCashMovement> cashMovements = new ArrayList<>();
         private List<EndPeriodPosition> endPeriodPositions = new ArrayList<>(); // Позиции на конец периода
         private Map<String, String> securityTypes = new HashMap<>(); // ISIN -> STOCK or BOND
+        private Map<String, CashMovementTotals> cashMovementTotalsByCurrency = new HashMap<>(); // Валюта -> итоги
+        private Map<String, TransactionTotals> transactionTotalsByCurrency = new HashMap<>(); // Валюта -> итоги
 
         // Getters and setters
         public LocalDate getReportPeriodStart() { return reportPeriodStart; }
@@ -66,6 +68,37 @@ public class BrokerReportParser {
         public List<PortfolioCashMovement> getCashMovements() { return cashMovements; }
         public List<EndPeriodPosition> getEndPeriodPositions() { return endPeriodPositions; }
         public Map<String, String> getSecurityTypes() { return securityTypes; }
+        public Map<String, CashMovementTotals> getCashMovementTotalsByCurrency() { return cashMovementTotalsByCurrency; }
+        public Map<String, TransactionTotals> getTransactionTotalsByCurrency() { return transactionTotalsByCurrency; }
+    }
+
+    public static class CashMovementTotals {
+        private String currency;
+        private BigDecimal totalCredit;
+        private BigDecimal totalDebit;
+
+        public CashMovementTotals(String currency, BigDecimal totalCredit, BigDecimal totalDebit) {
+            this.currency = currency;
+            this.totalCredit = totalCredit;
+            this.totalDebit = totalDebit;
+        }
+
+        public String getCurrency() { return currency; }
+        public BigDecimal getTotalCredit() { return totalCredit; }
+        public BigDecimal getTotalDebit() { return totalDebit; }
+    }
+
+    public static class TransactionTotals {
+        private String currency;
+        private BigDecimal totalAmount;
+
+        public TransactionTotals(String currency, BigDecimal totalAmount) {
+            this.currency = currency;
+            this.totalAmount = totalAmount;
+        }
+
+        public String getCurrency() { return currency; }
+        public BigDecimal getTotalAmount() { return totalAmount; }
     }
 
     public static class EndPeriodPosition {
@@ -199,11 +232,28 @@ public class BrokerReportParser {
                 Elements rows = table.select("tr");
                 log.info("Найдено строк в таблице справочника: {}", rows.size());
                 
-                // Пропускаем заголовок (первая строка)
+                // Определяем индекс начала данных: пропускаем заголовок и строку с номерами колонок
+                int startIndex = 1;
+                // Проверяем, есть ли строка с номерами колонок после заголовка
+                if (rows.size() > 1) {
+                    Element secondRow = rows.get(1);
+                    if (secondRow.hasClass("rn") || 
+                        (!secondRow.select("td.row-number").isEmpty())) {
+                        startIndex = 2; // Пропускаем заголовок и строку с номерами
+                        log.info("Обнаружена строка с номерами колонок в справочнике, начинаем парсинг с индекса {}", startIndex);
+                    }
+                }
+                
                 int processedCount = 0;
-                for (int i = 1; i < rows.size(); i++) {
+                for (int i = startIndex; i < rows.size(); i++) {
                     Element row = rows.get(i);
                     Elements cells = row.select("td");
+                    
+                    // Пропускаем строку с номерами колонок (row-number), если она не была пропущена выше
+                    if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                        log.debug("Пропуск строки #{} с номерами колонок в справочнике", i);
+                        continue;
+                    }
                     
                     // Структура: название (0), код (1), ISIN (2), эмитент (3), тип (4), выпуск (5)
                     if (cells.size() >= 5) {
@@ -369,12 +419,29 @@ public class BrokerReportParser {
                 log.info("Найдено строк в таблице портфеля: {}", rows.size());
                 
                 int processedRows = 0;
-                // Пропускаем заголовки (первые 2 строки: 0 и 1)
-                for (int i = 2; i < rows.size(); i++) {
+                // Определяем индекс начала данных: пропускаем заголовки и строку с номерами колонок
+                int startIndex = 1;
+                // Проверяем, есть ли строка с номерами колонок после заголовка
+                if (rows.size() > 1) {
+                    Element secondRow = rows.get(1);
+                    if (secondRow.hasClass("rn") || 
+                        (!secondRow.select("td.row-number").isEmpty())) {
+                        startIndex = 2; // Пропускаем заголовок и строку с номерами
+                        log.info("Обнаружена строка с номерами колонок, начинаем парсинг с индекса {}", startIndex);
+                    }
+                }
+                
+                for (int i = startIndex; i < rows.size(); i++) {
                     Element row = rows.get(i);
                     Elements cells = row.select("td");
                     
                     log.info("Обработка строки #{}: {} ячеек", i, cells.size());
+                    
+                    // Пропускаем строку с номерами колонок (row-number), если она не была пропущена выше
+                    if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                        log.debug("Пропуск строки #{} с номерами колонок", i);
+                        continue;
+                    }
                     
                     // Проверяем первую ячейку на colspan или текст заголовка
                     if (!cells.isEmpty()) {
@@ -506,14 +573,69 @@ public class BrokerReportParser {
 
             if (isTransactionTable) {
                 Elements rows = table.select("tr");
-                // Пропускаем заголовки (первые 2 строки обычно)
-                for (int i = 2; i < rows.size(); i++) {
+                // Пропускаем заголовки (первая строка) и строку с номерами колонок (если есть)
+                int startIndex = 1;
+                // Проверяем, есть ли строка с номерами колонок после заголовка
+                if (rows.size() > 1) {
+                    Element secondRow = rows.get(1);
+                    if (secondRow.hasClass("rn") || 
+                        (!secondRow.select("td.row-number").isEmpty())) {
+                        startIndex = 2; // Пропускаем заголовок и строку с номерами
+                    }
+                }
+                
+                for (int i = startIndex; i < rows.size(); i++) {
                     Element row = rows.get(i);
                     Elements cells = row.select("td");
                     
-                    // Пропускаем строки-заголовки площадок и итоговые строки
-                    if (cells.size() < 10 || cells.get(0).text().contains("Площадка") || 
-                        cells.get(0).text().contains("Итого")) {
+                    // Пропускаем строку с номерами колонок (row-number), если она не была пропущена выше
+                    if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                        log.debug("Пропуск строки #{} с номерами колонок", i);
+                        continue;
+                    }
+                    
+                    // Проверяем, является ли это строкой "Итого"
+                    String firstCellText = cells.size() > 0 ? cells.get(0).text().trim() : "";
+                    if (firstCellText.contains("Итого")) {
+                        // Парсим строку "Итого" для транзакций
+                        // Обычно в таблице транзакций итоговая строка содержит валюту и общую сумму
+                        if (cells.size() >= 10) {
+                            String currency = "";
+                            BigDecimal totalAmount = BigDecimal.ZERO;
+                            
+                            // Пытаемся извлечь валюту (обычно в ячейке 5, индекс 5)
+                            if (cells.size() > 5) {
+                                String currencyCell = cells.get(5).text().trim();
+                                if (!currencyCell.isEmpty() && !currencyCell.contains("Итого")) {
+                                    currency = currencyCell;
+                                }
+                            }
+                            
+                            // Парсим общую сумму (обычно в ячейке 9, индекс 9 - это amount)
+                            if (cells.size() > 9) {
+                                String amountText = cells.get(9).text().trim();
+                                if (!amountText.isEmpty() && !amountText.contains("Сумма")) {
+                                    totalAmount = parseDecimal(amountText);
+                                }
+                            }
+                            
+                            // Если валюта не найдена, используем RUB по умолчанию
+                            if (currency.isEmpty()) {
+                                currency = "RUB";
+                            }
+                            
+                            if (totalAmount.compareTo(BigDecimal.ZERO) != 0) {
+                                report.getTransactionTotalsByCurrency().put(currency, 
+                                    new TransactionTotals(currency, totalAmount));
+                                log.info("Распарсены итоги транзакций для валюты {}: общая сумма={}", 
+                                    currency, totalAmount);
+                            }
+                        }
+                        continue; // Пропускаем строку "Итого"
+                    }
+                    
+                    // Пропускаем строки-заголовки площадок
+                    if (cells.size() < 10 || cells.get(0).text().contains("Площадка")) {
                         continue;
                     }
 
@@ -584,11 +706,90 @@ public class BrokerReportParser {
                         }
                         transaction.setSecurityType(securityType);
 
+                        // Для облигаций конвертируем цену из процентов в абсолютную цену
+                        if ("BOND".equals(securityType)) {
+                            BigDecimal price = transaction.getPrice();
+                            if (price != null) {
+                                BigDecimal nominal = getBondNominal(doc, isin);
+                                if (nominal != null && nominal.compareTo(BigDecimal.ZERO) > 0) {
+                                    // Конвертируем процент в абсолютную цену: цена_процент * номинал / 100
+                                    BigDecimal absolutePrice = price.multiply(nominal)
+                                        .divide(new BigDecimal("100"), 6, java.math.RoundingMode.HALF_UP);
+                                    transaction.setPrice(absolutePrice);
+                                    log.info("Конвертирована цена транзакции для облигации ISIN {}: {}% от номинала {} = {}", 
+                                        isin, price, nominal, absolutePrice);
+                                } else {
+                                    log.warn("Не удалось найти номинал для облигации ISIN {}, используем цену как есть: {}", isin, price);
+                                }
+                            }
+                        }
+
                         report.getTransactions().add(transaction);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Получает номинал облигации по ISIN из таблицы портфеля или справочника MOEX
+     * @param doc HTML документ отчета
+     * @param isin ISIN облигации
+     * @return номинал облигации или null, если не найден
+     */
+    private BigDecimal getBondNominal(Document doc, String isin) {
+        // Сначала пытаемся найти номинал в таблице портфеля
+        Elements tables = doc.select("table");
+        for (Element table : tables) {
+            Elements rows = table.select("tr");
+            // Определяем индекс начала данных: пропускаем заголовки и строку с номерами колонок
+            int startIndex = 1;
+            // Проверяем, есть ли строка с номерами колонок после заголовка
+            if (rows.size() > 1) {
+                Element secondRow = rows.get(1);
+                if (secondRow.hasClass("rn") || 
+                    (!secondRow.select("td.row-number").isEmpty())) {
+                    startIndex = 2; // Пропускаем заголовок и строку с номерами
+                }
+            }
+            
+            for (int i = startIndex; i < rows.size(); i++) {
+                Element row = rows.get(i);
+                Elements cells = row.select("td");
+                
+                // Пропускаем строку с номерами колонок (row-number), если она не была пропущена выше
+                if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                    continue;
+                }
+                
+                // Пропускаем заголовки
+                if (cells.size() < 10 || cells.get(0).text().contains("Площадка") || 
+                    cells.get(0).text().contains("Итого")) {
+                    continue;
+                }
+                
+                // Проверяем, что это строка с нужным ISIN
+                if (cells.size() > 1) {
+                    String rowIsin = cells.get(1).text().trim();
+                    if (isin.equals(rowIsin) && cells.size() > 9) {
+                        // Номинал на конец периода - это 10-я ячейка (индекс 9)
+                        String nominalStr = cells.get(9).text().trim();
+                        if (!nominalStr.isEmpty() && !nominalStr.equals("-")) {
+                            BigDecimal nominal = parseDecimal(nominalStr);
+                            if (nominal.compareTo(BigDecimal.ZERO) > 0) {
+                                log.debug("Найден номинал для облигации ISIN {} в таблице портфеля: {}", isin, nominal);
+                                return nominal;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Если не нашли в таблице портфеля, пытаемся найти в MOEX справочнике
+        return bondRepository.findByIsin(isin)
+            .map(bond -> bond.getFacevalue())
+            .orElse(null);
     }
 
     private void parseCashMovements(Document doc, ParsedReport report) {
@@ -622,7 +823,71 @@ public class BrokerReportParser {
                     Element row = rows.get(i);
                     Elements cells = row.select("td");
                     
-                    if (cells.size() >= 6 && !cells.get(0).text().contains("Итого")) {
+                    // Пропускаем строку с номерами колонок (row-number)
+                    if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                        log.debug("Пропуск строки #{} с номерами колонок", i);
+                        continue;
+                    }
+                    
+                    // Проверяем, является ли это строкой "Итого"
+                    String firstCellText = cells.size() > 0 ? cells.get(0).text().trim() : "";
+                    if (firstCellText.contains("Итого")) {
+                        // Парсим строку "Итого, RUB Сумма зачисления итого Сумма списания итого"
+                        // Или может быть в разных ячейках: "Итого, RUB" | "Сумма зачисления итого" | "Сумма списания итого"
+                        if (cells.size() >= 6) {
+                            String currency = "";
+                            BigDecimal totalCredit = BigDecimal.ZERO;
+                            BigDecimal totalDebit = BigDecimal.ZERO;
+                            
+                            // Пытаемся извлечь валюту из первой ячейки (например, "Итого, RUB")
+                            String currencyText = firstCellText;
+                            if (currencyText.contains(",")) {
+                                String[] parts = currencyText.split(",");
+                                if (parts.length > 1) {
+                                    currency = parts[1].trim();
+                                }
+                            }
+                            
+                            // Если валюта не найдена в первой ячейке, проверяем другие ячейки
+                            if (currency.isEmpty() && cells.size() > 3) {
+                                String currencyCell = cells.get(3).text().trim();
+                                if (!currencyCell.isEmpty() && !currencyCell.contains("Итого")) {
+                                    currency = currencyCell;
+                                }
+                            }
+                            
+                            // Парсим суммы зачисления и списания
+                            // Обычно это ячейки 4 и 5 (индексы 4 и 5)
+                            if (cells.size() > 4) {
+                                String creditText = cells.get(4).text().trim();
+                                if (!creditText.isEmpty() && !creditText.contains("Сумма")) {
+                                    totalCredit = parseDecimal(creditText);
+                                }
+                            }
+                            
+                            if (cells.size() > 5) {
+                                String debitText = cells.get(5).text().trim();
+                                if (!debitText.isEmpty() && !debitText.contains("Сумма")) {
+                                    totalDebit = parseDecimal(debitText);
+                                }
+                            }
+                            
+                            // Если валюта не найдена, используем RUB по умолчанию
+                            if (currency.isEmpty()) {
+                                currency = "RUB";
+                            }
+                            
+                            if (totalCredit.compareTo(BigDecimal.ZERO) != 0 || totalDebit.compareTo(BigDecimal.ZERO) != 0) {
+                                report.getCashMovementTotalsByCurrency().put(currency, 
+                                    new CashMovementTotals(currency, totalCredit, totalDebit));
+                                log.info("Распарсены итоги движений денежных средств для валюты {}: зачисление={}, списание={}", 
+                                    currency, totalCredit, totalDebit);
+                            }
+                        }
+                        continue; // Пропускаем строку "Итого"
+                    }
+                    
+                    if (cells.size() >= 6) {
                         PortfolioCashMovement movement = new PortfolioCashMovement();
                         
                         movement.setDate(parseDate(cells.get(0).text().trim()));
@@ -662,11 +927,28 @@ public class BrokerReportParser {
                 Elements rows = table.select("tr");
                 log.info("Проверка {} строк в таблице портфеля для поиска ISIN", rows.size());
                 
-                for (int i = 2; i < rows.size(); i++) {
+                // Определяем индекс начала данных: пропускаем заголовки и строку с номерами колонок
+                int startIndex = 1;
+                // Проверяем, есть ли строка с номерами колонок после заголовка
+                if (rows.size() > 1) {
+                    Element secondRow = rows.get(1);
+                    if (secondRow.hasClass("rn") || 
+                        (!secondRow.select("td.row-number").isEmpty())) {
+                        startIndex = 2; // Пропускаем заголовок и строку с номерами
+                    }
+                }
+                
+                for (int i = startIndex; i < rows.size(); i++) {
                     Element row = rows.get(i);
                     Elements cells = row.select("td");
                     
                     log.debug("Проверка строки #{} для поиска ISIN: {} ячеек", i, cells.size());
+                    
+                    // Пропускаем строку с номерами колонок (row-number), если она не была пропущена выше
+                    if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                        log.debug("Пропуск строки #{} с номерами колонок при поиске ISIN", i);
+                        continue;
+                    }
                     
                     if (cells.size() >= 2) {
                         String firstCellText = cells.get(0).text().trim();
@@ -727,9 +1009,26 @@ public class BrokerReportParser {
                 Elements rows = table.select("tr");
                 log.info("Проверка {} строк в таблице справочника для поиска ISIN", rows.size());
                 
-                for (int i = 1; i < rows.size(); i++) {
+                // Определяем индекс начала данных: пропускаем заголовок и строку с номерами колонок
+                int startIndex = 1;
+                // Проверяем, есть ли строка с номерами колонок после заголовка
+                if (rows.size() > 1) {
+                    Element secondRow = rows.get(1);
+                    if (secondRow.hasClass("rn") || 
+                        (!secondRow.select("td.row-number").isEmpty())) {
+                        startIndex = 2; // Пропускаем заголовок и строку с номерами
+                    }
+                }
+                
+                for (int i = startIndex; i < rows.size(); i++) {
                     Element row = rows.get(i);
                     Elements cells = row.select("td");
+                    
+                    // Пропускаем строку с номерами колонок (row-number), если она не была пропущена выше
+                    if (row.hasClass("rn") || (cells.size() > 0 && cells.get(0).hasClass("row-number"))) {
+                        log.debug("Пропуск строки #{} с номерами колонок в справочнике при поиске ISIN", i);
+                        continue;
+                    }
                     
                     if (cells.size() >= 3) {
                         String name = cells.get(0).text().trim();

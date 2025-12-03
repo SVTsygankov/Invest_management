@@ -18,5 +18,11 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
                                                         @Param("endDate") LocalDate endDate);
 
     Optional<PortfolioTransaction> findByPortfolioAndTradeNumber(Portfolio portfolio, String tradeNumber);
+
+    @Query("SELECT COALESCE(SUM(t.amount), 0) FROM PortfolioTransaction t WHERE t.portfolio = :portfolio AND t.currency = :currency AND t.tradeDate >= :startDate AND t.tradeDate <= :endDate")
+    java.math.BigDecimal sumAmountByPeriodAndCurrency(@Param("portfolio") Portfolio portfolio,
+                                                      @Param("currency") String currency,
+                                                      @Param("startDate") LocalDate startDate,
+                                                      @Param("endDate") LocalDate endDate);
 }
 

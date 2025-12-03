@@ -108,6 +108,11 @@ public class PortfolioPositionService {
             // Устанавливаем связи с MOEX справочниками
             setMoexRelations(position, endPos.getIsin(), endPos.getSecurityType());
             
+            // Сохраняем название из отчета (fallback для погашенных облигаций)
+            if (endPos.getSecurityName() != null && !endPos.getSecurityName().isEmpty()) {
+                position.setSecurityName(endPos.getSecurityName());
+            }
+            
             // Сохраняем цену из отчета
             if (endPos.getLastKnownPrice() != null) {
                 position.setLastKnownPrice(endPos.getLastKnownPrice());
